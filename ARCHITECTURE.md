@@ -131,6 +131,49 @@ For per-monitor wallpapers (Windows 10/11):
 - `WindowMaximized` — Whether the window was maximized
 - `ThemePanelWidth` — Width of the left theme panel
 
+### 4c. Centralized Theme System
+
+**Responsibility**: Single source of truth for all application UI colors. No hardcoded colors are allowed anywhere else in the app.
+
+**Location**: `WindowsThemeManager.Themes`
+
+**Components**:
+
+| File | Purpose |
+|------|---------|
+| `AppThemeColors.cs` | Static class defining all color values as named properties. Contains both `LightPalette` and `DarkPalette` snapshots. |
+| `ThemeResources.xaml` | WPF ResourceDictionary with named `SolidColorBrush` entries for every color (light and dark variants stored as `KeyName.Light` and `KeyName.Dark`). |
+| `ThemeResources.xaml.cs` | Code-behind with `ApplyTheme(bool isDark)` — copies the correct variant into `Application.Current.Resources` so all `DynamicResource` bindings resolve. |
+
+**Design Rules**:
+1. **All colors are defined in one place**: `AppThemeColors.cs`. No other file may contain hardcoded hex color values (`#RRGGBB` or `Color.FromRgb`).
+2. **XAML uses `DynamicResource`**: Every element that has a theme-dependent color references a brush by key (e.g., `{DynamicResource AppBackground}`, `{DynamicResource AppTextPrimary}`).
+3. **Theme switching is one call**: `ThemeResources.ApplyTheme(isDark)` swaps all brushes at once. No per-element color code in `MainWindow.xaml.cs`.
+4. **Shared (theme-independent) colors** like accent highlight colors are defined once in `AppThemeColors` and used by both XAML and converters.
+
+**Brush Key Reference**:
+
+| Brush Key | Light | Dark | Elements |
+|-----------|-------|------|----------|
+| `AppBackground` | `#F5F5F5` | `#2D2D2D` | Window, theme panel |
+| `AppSurface` | `#E8E8E8` | `#252525` | Panel headers, status bar |
+| `AppSurfaceAlt` | `#1E1E1E` | `#1A1A1A` | Monitor area background |
+| `AppTextPrimary` | `#000000` | `#E0E0E0` | Headers, theme names |
+| `AppTextSecondary` | `#808080` | `#999999` | Status text, paths |
+| `AppGridSplitter` | `#CCCCCC` | `#404040` | Column splitter |
+| `AppLoadingOverlay` | `#80FFFFFF` | `#801E1E1E` | Loading overlays |
+| `AppMonitorHeaderText` | `#FFFFFF` | `#E0E0E0` | "Monitor Layout" text |
+| `AppMonitorBg` | `#1E1E1E` | `#1A1A1A` | Monitor item button bg |
+| `AppMonitorBorder` | `#555555` | `#444444` | Monitor item border |
+| `AppMonitorHoverBorder` | `#0078D4` | `#0078D4` | Hover accent (same both) |
+| `AppMonitorPlaceholder` | `#3A3A3A` | `#2A2A2A` | "No Wallpaper" bg |
+| `AppMonitorBadgeBg` | `#AA000000` | `#AA000000` | Badge backgrounds (same) |
+| `AppMonitorBadgeText` | `#FFFFFF` | `#FFFFFF` | Badge text (same) |
+| `AppLoadingIcon` | `#000000` | `#E0E0E0` | Loading emoji |
+| `AppLoadingText` | `#333333` | `#E0E0E0` | Loading text |
+| `AppAccentBackground` | `#E3F2FD` | `#E3F2FD` | Active theme highlight (shared) |
+| `AppAccentBorder` | `#1976D2` | `#1976D2` | Active theme border (shared) |
+
 ### 5. UI Components
 
 #### Theme Browser Panel (Left Side)
@@ -180,6 +223,7 @@ For per-monitor wallpapers (Windows 10/11):
 - **Service Layer**: Separate services for theme, monitor, and wallpaper operations
 - **Repository Pattern**: Theme discovery abstracted behind interface
 - **Observer Pattern**: INotifyPropertyChanged for reactive UI updates
+- **Centralized Theme System**: All UI colors defined in `AppThemeColors.cs`, exposed as `DynamicResource` brushes. No hardcoded colors elsewhere.
 - **Polling-based wallpaper tracking**: `IDesktopWallpaper.GetWallpaper()` polled every 2 seconds is the only accepted mechanism for wallpaper change detection
 - **Observable debugging**: when debugging stalls, add stage-specific diagnostics before attempting more speculative fixes
 
@@ -213,6 +257,16 @@ _logger.LogInformation("Started listening for wallpaper change events");
 Console.WriteLine("[MonitorService] Started listening for wallpaper change events");
 System.Diagnostics.Debug.WriteLine("[MonitorService] Started listening for wallpaper change events");
 ```
+
+### Centralized Color Policy
+
+**Rule**: All application UI colors MUST be defined in `WindowsThemeManager.Themes.AppThemeColors.cs`. No other file may contain hardcoded hex color values (`#RRGGBB` in XAML, `Color.FromRgb`/`Color.FromArgb` in C#).
+
+**Enforcement**:
+- XAML elements use `{DynamicResource AppKey}` to reference theme brushes
+- The `ThemeResources.ApplyTheme(isDark)` method swaps all brushes in one call
+- Converters reference `AppThemeColors.AccentBackground` etc. instead of inline hex strings
+- To change a color, edit `AppThemeColors.cs` only — it propagates everywhere automatically
 
 ## Dependencies
 

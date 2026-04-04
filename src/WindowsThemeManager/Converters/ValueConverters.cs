@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
+using WindowsThemeManager.Themes;
 
 namespace WindowsThemeManager.Converters;
 
@@ -26,6 +27,7 @@ public class BoolToVisibilityConverter : IValueConverter
 
 /// <summary>
 /// Returns a highlight brush for active theme items.
+/// Uses the centralized accent color from AppThemeColors.
 /// </summary>
 public class ActiveThemeBackgroundConverter : IValueConverter
 {
@@ -33,7 +35,7 @@ public class ActiveThemeBackgroundConverter : IValueConverter
     {
         if (value is bool b && b)
         {
-            var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E3F2FD"));
+            var brush = new SolidColorBrush(AppThemeColors.AccentBackground);
             brush.Freeze();
             return brush;
         }
@@ -46,6 +48,7 @@ public class ActiveThemeBackgroundConverter : IValueConverter
 
 /// <summary>
 /// Returns a border brush for active theme items.
+/// Uses the centralized accent color from AppThemeColors.
 /// </summary>
 public class ActiveThemeBorderConverter : IValueConverter
 {
@@ -53,7 +56,7 @@ public class ActiveThemeBorderConverter : IValueConverter
     {
         if (value is bool b && b)
         {
-            var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1976D2"));
+            var brush = new SolidColorBrush(AppThemeColors.AccentBorder);
             brush.Freeze();
             return brush;
         }

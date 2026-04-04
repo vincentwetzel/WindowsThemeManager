@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:xctk="clr-namespace:WindowsThemeManager.Themes"
+                    x:Class="WindowsThemeManager.Themes.ThemeResources">
+
+    <!-- Light Theme Brushes -->
+    <SolidColorBrush x:Key="AppBackground.Light"         Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="AppSurface.Light"            Color="#E8E8E8"/>
+    <SolidColorBrush x:Key="AppSurfaceAlt.Light"         Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="AppTextPrimary.Light"        Color="#000000"/>
+    <SolidColorBrush x:Key="AppTextSecondary.Light"      Color="#808080"/>
+    <SolidColorBrush x:Key="AppGridSplitter.Light"       Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="AppLoadingOverlay.Light"     Color="#80FFFFFF"/>
+    <SolidColorBrush x:Key="AppMonitorHeaderText.Light"  Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="AppMonitorBg.Light"          Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="AppMonitorBorder.Light"      Color="#555555"/>
+    <SolidColorBrush x:Key="AppMonitorHoverBorder.Light" Color="#0078D4"/>
+    <SolidColorBrush x:Key="AppMonitorPlaceholder.Light" Color="#3A3A3A"/>
+    <SolidColorBrush x:Key="AppMonitorBadgeBg.Light"     Color="#AA000000"/>
+    <SolidColorBrush x:Key="AppMonitorBadgeText.Light"   Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="AppLoadingIcon.Light"        Color="#000000"/>
+    <SolidColorBrush x:Key="AppLoadingText.Light"        Color="#333333"/>
+
+    <!-- Dark Theme Brushes -->
+    <SolidColorBrush x:Key="AppBackground.Dark"         Color="#2D2D2D"/>
+    <SolidColorBrush x:Key="AppSurface.Dark"            Color="#252525"/>
+    <SolidColorBrush x:Key="AppSurfaceAlt.Dark"         Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="AppTextPrimary.Dark"        Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="AppTextSecondary.Dark"      Color="#999999"/>
+    <SolidColorBrush x:Key="AppGridSplitter.Dark"       Color="#404040"/>
+    <SolidColorBrush x:Key="AppLoadingOverlay.Dark"     Color="#801E1E1E"/>
+    <SolidColorBrush x:Key="AppMonitorHeaderText.Dark"  Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="AppMonitorBg.Dark"          Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="AppMonitorBorder.Dark"      Color="#444444"/>
+    <SolidColorBrush x:Key="AppMonitorHoverBorder.Dark" Color="#0078D4"/>
+    <SolidColorBrush x:Key="AppMonitorPlaceholder.Dark" Color="#2A2A2A"/>
+    <SolidColorBrush x:Key="AppMonitorBadgeBg.Dark"     Color="#AA000000"/>
+    <SolidColorBrush x:Key="AppMonitorBadgeText.Dark"   Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="AppLoadingIcon.Dark"        Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="AppLoadingText.Dark"        Color="#E0E0E0"/>
+
+    <!-- Active theme highlight (shared) -->
+    <SolidColorBrush x:Key="AppAccentBackground" Color="#E3F2FD"/>
+    <SolidColorBrush x:Key="AppAccentBorder"     Color="#1976D2"/>
+</ResourceDictionary>
