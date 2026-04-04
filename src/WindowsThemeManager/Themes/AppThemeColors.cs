@@ -11,22 +11,22 @@ namespace WindowsThemeManager.Themes;
 public static class AppThemeColors
 {
     // ── Light palette ──
-    public static Color LightBackground       => Color.FromRgb(0xF5, 0xF5, 0xF5);
-    public static Color LightSurface           => Color.FromRgb(0xE8, 0xE8, 0xE8);
-    public static Color LightSurfaceAlt        => Color.FromRgb(0x1E, 0x1E, 0x1E);
-    public static Color LightTextPrimary       => Color.FromRgb(0x00, 0x00, 0x00);
-    public static Color LightTextSecondary     => Color.FromRgb(0x80, 0x80, 0x80);
-    public static Color LightGridSplitter      => Color.FromRgb(0xCC, 0xCC, 0xCC);
-    public static Color LightLoadingOverlay    => Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF);
-    public static Color LightMonitorHeaderText => Colors.White;       // monitor area always has white text on dark bg
-    public static Color LightMonitorBg         => Color.FromRgb(0x1E, 0x1E, 0x1E);
-    public static Color LightMonitorBorder     => Color.FromRgb(0x55, 0x55, 0x55);
-    public static Color LightMonitorHoverBorder=> Color.FromRgb(0x00, 0x78, 0xD4);
-    public static Color LightMonitorPlaceholder=> Color.FromRgb(0x3A, 0x3A, 0x3A);
-    public static Color LightMonitorBadgeBg    => Color.FromArgb(0xAA, 0x00, 0x00, 0x00);
-    public static Color LightMonitorBadgeText  => Colors.White;
-    public static Color LightLoadingIcon       => Colors.Black;
-    public static Color LightLoadingText       => Color.FromRgb(0x33, 0x33, 0x33);
+    public static Color LightBackground         => Color.FromRgb(0xF5, 0xF5, 0xF5);
+    public static Color LightSurface             => Color.FromRgb(0xE8, 0xE8, 0xE8);
+    public static Color LightSurfaceAlt          => Color.FromRgb(0xE0, 0xE0, 0xE0);
+    public static Color LightTextPrimary         => Color.FromRgb(0x00, 0x00, 0x00);
+    public static Color LightTextSecondary       => Color.FromRgb(0x80, 0x80, 0x80);
+    public static Color LightGridSplitter        => Color.FromRgb(0xCC, 0xCC, 0xCC);
+    public static Color LightLoadingOverlay      => Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF);
+    public static Color LightMonitorHeaderText   => Color.FromRgb(0x20, 0x20, 0x20);
+    public static Color LightMonitorBg           => Color.FromRgb(0xD5, 0xD5, 0xD5);
+    public static Color LightMonitorBorder       => Color.FromRgb(0xAA, 0xAA, 0xAA);
+    public static Color LightMonitorHoverBorder  => Color.FromRgb(0x00, 0x78, 0xD4);
+    public static Color LightMonitorPlaceholder    => Color.FromRgb(0xBB, 0xBB, 0xBB);
+    public static Color LightMonitorBadgeBg      => Color.FromArgb(0x80, 0x80, 0x80, 0x80);
+    public static Color LightMonitorBadgeText    => Color.FromRgb(0x20, 0x20, 0x20);
+    public static Color LightLoadingIcon         => Color.FromRgb(0x00, 0x00, 0x00);
+    public static Color LightLoadingText         => Color.FromRgb(0x33, 0x33, 0x33);
 
     // ── Dark palette ──
     public static Color DarkBackground        => Color.FromRgb(0x2D, 0x2D, 0x2D);

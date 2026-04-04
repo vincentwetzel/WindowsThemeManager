@@ -157,18 +157,18 @@ For per-monitor wallpapers (Windows 10/11):
 |-----------|-------|------|----------|
 | `AppBackground` | `#F5F5F5` | `#2D2D2D` | Window, theme panel |
 | `AppSurface` | `#E8E8E8` | `#252525` | Panel headers, status bar |
-| `AppSurfaceAlt` | `#1E1E1E` | `#1A1A1A` | Monitor area background |
+| `AppSurfaceAlt` | `#E0E0E0` | `#1A1A1A` | Monitor area background |
 | `AppTextPrimary` | `#000000` | `#E0E0E0` | Headers, theme names |
 | `AppTextSecondary` | `#808080` | `#999999` | Status text, paths |
 | `AppGridSplitter` | `#CCCCCC` | `#404040` | Column splitter |
 | `AppLoadingOverlay` | `#80FFFFFF` | `#801E1E1E` | Loading overlays |
-| `AppMonitorHeaderText` | `#FFFFFF` | `#E0E0E0` | "Monitor Layout" text |
-| `AppMonitorBg` | `#1E1E1E` | `#1A1A1A` | Monitor item button bg |
-| `AppMonitorBorder` | `#555555` | `#444444` | Monitor item border |
+| `AppMonitorHeaderText` | `#202020` | `#E0E0E0` | "Monitor Layout" text |
+| `AppMonitorBg` | `#D5D5D5` | `#1A1A1A` | Monitor item button bg |
+| `AppMonitorBorder` | `#AAAAAA` | `#444444` | Monitor item border |
 | `AppMonitorHoverBorder` | `#0078D4` | `#0078D4` | Hover accent (same both) |
-| `AppMonitorPlaceholder` | `#3A3A3A` | `#2A2A2A` | "No Wallpaper" bg |
-| `AppMonitorBadgeBg` | `#AA000000` | `#AA000000` | Badge backgrounds (same) |
-| `AppMonitorBadgeText` | `#FFFFFF` | `#FFFFFF` | Badge text (same) |
+| `AppMonitorPlaceholder` | `#BBBBBB` | `#2A2A2A` | "No Wallpaper" bg |
+| `AppMonitorBadgeBg` | `#80808080` | `#AA000000` | Badge backgrounds |
+| `AppMonitorBadgeText` | `#202020` | `#FFFFFF` | Badge text |
 | `AppLoadingIcon` | `#000000` | `#E0E0E0` | Loading emoji |
 | `AppLoadingText` | `#333333` | `#E0E0E0` | Loading text |
 | `AppAccentBackground` | `#E3F2FD` | `#E3F2FD` | Active theme highlight (shared) |

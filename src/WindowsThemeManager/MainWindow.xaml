@@ -61,9 +61,9 @@
             <Button Command="{Binding OpenWallpaperCommand}"
                     Cursor="Hand"
                     ToolTip="{Binding TooltipText}"
-                    BorderBrush="{StaticResource AppMonitorBorder}"
+                    BorderBrush="{DynamicResource AppMonitorBorder}"
                     BorderThickness="2"
-                    Background="{StaticResource AppMonitorBg}"
+                    Background="{DynamicResource AppMonitorBg}"
                     Padding="0"
                     Name="MonitorItemButton">
                 <Button.Style>
@@ -81,7 +81,7 @@
                         </Setter>
                         <Style.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="BorderBrush" Value="{StaticResource AppMonitorHoverBorder}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource AppMonitorHoverBorder}"/>
                                 <Setter Property="BorderThickness" Value="3"/>
                             </Trigger>
                         </Style.Triggers>
@@ -91,15 +91,15 @@
                     <Image Source="{Binding WallpaperPreview}"
                            Stretch="Uniform"
                            Opacity="0.8"/>
-                    <Rectangle Fill="{StaticResource AppMonitorPlaceholder}"
+                    <Rectangle Fill="{DynamicResource AppMonitorPlaceholder}"
                                Visibility="{Binding WallpaperPreview, Converter={StaticResource NullToVisibilityConverter}}"/>
                     <TextBlock Text="No Wallpaper"
                                FontSize="12"
-                               Foreground="{StaticResource AppTextSecondary}"
+                               Foreground="{DynamicResource AppTextSecondary}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Visibility="{Binding WallpaperPreview, Converter={StaticResource NullToVisibilityConverter}}"/>
-                    <Border Background="{StaticResource AppMonitorBadgeBg}"
+                    <Border Background="{DynamicResource AppMonitorBadgeBg}"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top"
                             CornerRadius="20"
@@ -109,17 +109,10 @@
                         <TextBlock Text="{Binding MonitorNumber}"
                                    FontSize="20"
                                    FontWeight="Bold"
-                                   Foreground="{StaticResource AppMonitorBadgeText}"
+                                   Foreground="{DynamicResource AppMonitorBadgeText}"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                     </Border>
-                    <TextBlock Text="{Binding DeviceName}"
-                               Background="{StaticResource AppMonitorBadgeBg}"
-                               Foreground="{StaticResource AppMonitorBadgeText}"
-                               FontSize="10"
-                               TextAlignment="Center"
-                               VerticalAlignment="Bottom"
-                               Margin="2"/>
                 </Grid>
             </Button>
         </DataTemplate>

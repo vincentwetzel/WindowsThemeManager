@@ -17,6 +17,7 @@ namespace WindowsThemeManager;
 public partial class MainWindow : System.Windows.Window, INotifyPropertyChanged
 {
     private bool _isDark;
+    private bool _themeApplied;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -24,6 +25,10 @@ public partial class MainWindow : System.Windows.Window, INotifyPropertyChanged
     {
         InitializeComponent();
         Loaded += MainWindow_Loaded;
+
+        // Apply default theme immediately so all DynamicResource keys exist
+        // before any DataTemplate is ever applied
+        ThemeResources.ApplyTheme(isDark: false);
     }
 
     public bool IsDark
@@ -31,8 +36,9 @@ public partial class MainWindow : System.Windows.Window, INotifyPropertyChanged
         get => _isDark;
         set
         {
-            if (_isDark == value) return;
+            if (_isDark == value && _themeApplied) return;
             _isDark = value;
+            _themeApplied = true;
             OnPropertyChanged();
             ApplyThemeColors();
         }
