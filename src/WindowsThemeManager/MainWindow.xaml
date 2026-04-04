@@ -10,7 +10,8 @@
         MinHeight="500" MinWidth="800"
         WindowStartupLocation="CenterScreen"
         PreviewMouseDown="Window_PreviewMouseDown"
-        Name="RootWindow">
+        Name="RootWindow"
+        Icon="app-icon.ico">
 
     <Window.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
