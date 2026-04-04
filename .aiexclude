@@ -1,0 +1,25 @@
+# AI Exclude - Files that AI assistants should not read or modify
+# These are generated, cached, or binary files that add noise
+
+# Build outputs
+**/bin/**
+**/obj/**
+**/objdiag/**
+**/bindiag/**
+
+# User settings
+.vs/
+.vscode/*.json.orig
+
+# Temporary files
+$null
+.codex_tmp_enum_cp.ps1
+.dotnet-home/
+
+# Package caches
+**/packages/**
+
+# Telemetry
+*.dotnetUserLevelCache/
+**/MachineId*
+**/TelemetryStorageService/**

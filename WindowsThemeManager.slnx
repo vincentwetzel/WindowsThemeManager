@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WindowsThemeManager.Core/WindowsThemeManager.Core.csproj" />
+    <Project Path="src/WindowsThemeManager.Tests/WindowsThemeManager.Tests.csproj" />
+    <Project Path="src/WindowsThemeManager/WindowsThemeManager.csproj" />
+  </Folder>
+</Solution>
