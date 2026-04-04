@@ -134,3 +134,4 @@ src/WindowsThemeManager/objdiag/
 # Local settings files that may contain sensitive data
 # Uncomment if you have local settings
 # *.local.settings.json
+.qwen/  
