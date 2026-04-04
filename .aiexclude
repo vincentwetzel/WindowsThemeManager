@@ -6,6 +6,7 @@
 **/obj/**
 **/objdiag/**
 **/bindiag/**
+**/publish/**
 
 # User settings
 .vs/
