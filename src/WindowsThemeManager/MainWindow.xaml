@@ -9,7 +9,8 @@
         Height="700" Width="1200"
         MinHeight="500" MinWidth="800"
         WindowStartupLocation="CenterScreen"
-        PreviewMouseDown="Window_PreviewMouseDown">
+        PreviewMouseDown="Window_PreviewMouseDown"
+        Name="RootWindow">
 
     <Window.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -18,7 +19,7 @@
         <converters:BoolToIconConverter x:Key="BoolToIconConverter"/>
         <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <converters:DoubleToGridLengthConverter x:Key="DoubleToGridLengthConverter"/>
-        
+
         <DataTemplate x:Key="ThemeItemTemplate">
             <Border Padding="8,4"
                     Background="{Binding IsActive, Converter={StaticResource ActiveThemeBackgroundConverter}}"
@@ -34,10 +35,11 @@
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="{Binding Theme.DisplayName}"
                                    FontWeight="SemiBold"
-                                   FontSize="13"/>
+                                   FontSize="13"
+                                   Name="ThemeItemNameText"/>
                         <TextBlock Text="{Binding Theme.ThemePath}"
                                    FontSize="10"
-                                   Foreground="#808080"
+                                   Name="ThemeItemPathText"
                                    TextTrimming="CharacterEllipsis"
                                    MaxWidth="250"/>
                     </StackPanel>
@@ -61,7 +63,8 @@
                     BorderBrush="#555"
                     BorderThickness="2"
                     Background="#2A2A2A"
-                    Padding="0">
+                    Padding="0"
+                    Name="MonitorItemButton">
                 <Button.Style>
                     <Style TargetType="Button">
                         <Setter Property="Template">
@@ -96,12 +99,12 @@
                                VerticalAlignment="Center"
                                Visibility="{Binding WallpaperPreview, Converter={StaticResource NullToVisibilityConverter}}"/>
                     <Border Background="#AA000000"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
                             CornerRadius="20"
                             MinWidth="40"
                             MinHeight="40"
-                            Padding="8">
+                            Margin="8,8,0,0">
                         <TextBlock Text="{Binding MonitorNumber}"
                                    FontSize="20"
                                    FontWeight="Bold"
@@ -122,118 +125,107 @@
     </Window.Resources>
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="{Binding ThemePanelWidth, Mode=TwoWay, Converter={StaticResource DoubleToGridLengthConverter}}"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <DockPanel Grid.Column="0" Background="#F5F5F5">
-            <Border DockPanel.Dock="Top" Background="#E8E8E8">
+        <DockPanel Grid.Column="0" Grid.Row="0" Name="ThemePanelDock" Background="#F5F5F5">
+            <Border DockPanel.Dock="Top" Name="ThemePanelHeaderBorder" Background="#E8E8E8">
                 <StackPanel Margin="12,8">
-                    <TextBlock Text="Available Themes"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,4"/>
+                    <TextBlock Name="ThemePanelHeaderText" Text="Available Themes"
+                               FontSize="16" FontWeight="SemiBold" Foreground="#000000" Margin="0,0,0,4"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                        <Button Content="Refresh"
-                                Command="{Binding RefreshCommand}"
-                                Padding="8,4"
-                                FontSize="11"/>
+                        <Button Content="Refresh" Command="{Binding RefreshCommand}" Padding="8,4" FontSize="11"/>
                         <TextBlock Text="{Binding StatusMessage}"
-                                   FontSize="10"
-                                   Foreground="#808080"
-                                   VerticalAlignment="Center"
-                                   Margin="8,0,0,0"
-                                   TextTrimming="CharacterEllipsis"/>
+                                   FontSize="10" Foreground="#808080" VerticalAlignment="Center"
+                                   Margin="8,0,0,0" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
 
-            <Border Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#80FFFFFF"
-                    Panel.ZIndex="1">
+            <Border Name="LoadingBorder" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Background="#80FFFFFF" Panel.ZIndex="1">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="⏳"
-                               FontSize="32"
-                               HorizontalAlignment="Center"
-                               Margin="0,0,0,12">
+                    <TextBlock Text="⏳" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,12" Foreground="#000000">
                         <TextBlock.RenderTransform>
                             <RotateTransform CenterX="16" CenterY="16"/>
                         </TextBlock.RenderTransform>
                     </TextBlock>
-                    <TextBlock Text="Loading themes..."
-                               FontSize="14"
-                               HorizontalAlignment="Center"
-                               Foreground="#333"/>
+                    <TextBlock Text="Loading themes..." FontSize="14" HorizontalAlignment="Center" Foreground="#333333"/>
                 </StackPanel>
             </Border>
 
             <ListBox ItemsSource="{Binding Themes}"
                      ItemTemplate="{StaticResource ThemeItemTemplate}"
                      SelectedItem="{Binding SelectedTheme}"
-                     Background="Transparent"
-                     BorderThickness="0"
+                     Background="Transparent" BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      ScrollViewer.VerticalScrollBarVisibility="Auto"/>
         </DockPanel>
 
-        <GridSplitter Grid.Column="1"
-                      Width="4"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Stretch"
-                      Cursor="SizeWE">
-            <GridSplitter.Background>
-                <SolidColorBrush Color="#CCCCCC"/>
-            </GridSplitter.Background>
-        </GridSplitter>
+        <GridSplitter Grid.Column="1" Grid.Row="0" Width="4" HorizontalAlignment="Center"
+                      VerticalAlignment="Stretch" Cursor="SizeWE"
+                      Name="MainGridSplitter" Background="#CCCCCC"/>
 
-        <Grid Grid.Column="2" Background="#1E1E1E">
-            <TextBlock Text="Monitor Layout"
-                       FontSize="14"
-                       FontWeight="SemiBold"
-                       Foreground="#FFFFFF"
-                       Margin="16,12,0,0"
-                       Panel.ZIndex="1"/>
+        <Grid Grid.Column="2" Grid.Row="0" Name="MonitorAreaGrid" Background="#1E1E1E">
+            <TextBlock Name="MonitorAreaHeaderText" Text="Monitor Layout"
+                       FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF"
+                       Margin="16,12,0,0" Panel.ZIndex="1"/>
 
-            <Border Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#801E1E1E"
-                    Panel.ZIndex="2">
+            <Border Name="MonitorLoadingBorder" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Background="#801E1E1E" Panel.ZIndex="2">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="⏳"
-                               FontSize="32"
-                               Foreground="#FFFFFF"
-                               HorizontalAlignment="Center"
-                               Margin="0,0,0,12"/>
-                    <TextBlock Text="Detecting monitors..."
-                               FontSize="14"
-                               Foreground="#FFFFFF"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="⏳" FontSize="32" Foreground="#FFFFFF"
+                               HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <TextBlock Text="Detecting monitors..." FontSize="14" Foreground="#FFFFFF"
+                               VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
-            <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                          VerticalScrollBarVisibility="Auto"
-                          Padding="20">
-                <ItemsControl ItemsSource="{Binding Monitors}"
-                              ItemTemplate="{StaticResource MonitorItemTemplate}"
-                              Name="MonitorsItemsControl">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <Canvas Background="Transparent"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemContainerStyle>
-                        <Style>
-                            <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}"/>
-                            <Setter Property="Canvas.Top" Value="{Binding CanvasTop}"/>
-                            <Setter Property="Canvas.Width" Value="{Binding CanvasWidth}"/>
-                            <Setter Property="Canvas.Height" Value="{Binding CanvasHeight}"/>
-                        </Style>
-                    </ItemsControl.ItemContainerStyle>
-                </ItemsControl>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="20">
+                <Viewbox Stretch="Uniform" StretchDirection="Both">
+                    <ItemsControl ItemsSource="{Binding Monitors}"
+                                  ItemTemplate="{StaticResource MonitorItemTemplate}"
+                                  Name="MonitorsItemsControl" Width="800" Height="600">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas Background="Transparent" Width="800" Height="600"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                            <Style>
+                                <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}"/>
+                                <Setter Property="Canvas.Top" Value="{Binding CanvasTop}"/>
+                                <Setter Property="Canvas.Width" Value="{Binding CanvasWidth}"/>
+                                <Setter Property="Canvas.Height" Value="{Binding CanvasHeight}"/>
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                    </ItemsControl>
+                </Viewbox>
             </ScrollViewer>
         </Grid>
+
+        <!-- Status bar with theme selector -->
+        <Border Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1"
+                Name="StatusBarBorder" Background="#E8E8E8"
+                BorderBrush="#CCCCCC" BorderThickness="0,1,0,0" Padding="12,4">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Text="Theme:" FontSize="11" Foreground="#808080"
+                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <ComboBox x:Name="ThemeModeComboBox" SelectedIndex="0"
+                          SelectionChanged="ThemeModeComboBox_SelectionChanged"
+                          Width="80" FontSize="11" VerticalAlignment="Center">
+                    <ComboBoxItem Content="System"/>
+                    <ComboBoxItem Content="Light"/>
+                    <ComboBoxItem Content="Dark"/>
+                </ComboBox>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

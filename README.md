@@ -17,6 +17,10 @@ This application provides an enhanced theme management experience by:
 - Visual representation of multi-monitor setups with current wallpapers
 - Click-to-apply theme selection
 - Click-to-open wallpaper files for quick editing/viewing
+- **Light/Dark/System theme selector** in the status bar for app UI theming
+- **Persistent settings** — theme preference, window size, and panel width are saved between sessions
+- **Async startup** — non-blocking settings load prevents UI thread deadlocks
+- **Resizable monitor canvas** with Viewbox scaling for accurate multi-monitor visualization
 - Native Windows integration
 - **Real-time wallpaper updates**: Automatically detects and displays wallpaper changes via Windows COM events (no polling allowed)
 

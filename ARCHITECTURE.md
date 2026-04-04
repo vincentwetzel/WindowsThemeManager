@@ -91,7 +91,7 @@ Path=C:\path\to\visualstyle.msstyles
 
 **Responsibility**: Track and manage wallpaper files per monitor.
 
-**Registry Key**: 
+**Registry Key**:
 `HKEY_CURRENT_USER\Control Panel\Desktop`
 - `WallPaper` - Default wallpaper path
 - `TranscodedImageCache` - Current wallpaper (binary)
@@ -106,6 +106,30 @@ For per-monitor wallpapers (Windows 10/11):
 - This is the only accepted polling mechanism in the codebase.
 - `IDesktopWallpaper` is the definitive source of truth for per-monitor wallpaper state.
 - Do NOT use `SystemEvents.UserPreferenceChanged`, `SHChangeNotifyRegister`, or `FileSystemWatcher` for wallpaper detection — these have been proven unreliable for multi-monitor slideshow advances.
+
+### 4a. Theme Manager Service (Static Helper)
+
+**Responsibility**: Detect system-wide light/dark theme settings from the Windows registry.
+
+**Location**: `WindowsThemeManager.Services.ThemeManager`
+
+**Key Methods**:
+- `GetEffectiveTheme(AppThemeMode)` — Returns the effective theme (Light, Dark, or System). If System, reads the registry to determine.
+- `IsWindowsDarkMode()` — Reads `HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize\AppsUseLightTheme` to check if Windows is in dark mode.
+
+### 4b. Settings Persistence
+
+**Responsibility**: Persist and restore user preferences between application sessions.
+
+**Location**: `WindowsThemeManager.Core.Services.SettingsService`
+
+**Settings File**: `%LOCALAPPDATA%\WindowsThemeManager\settings.json`
+
+**Persisted Properties**:
+- `ThemeMode` — AppThemeMode (System, Light, Dark)
+- `WindowWidth` / `WindowHeight` — Last window dimensions
+- `WindowMaximized` — Whether the window was maximized
+- `ThemePanelWidth` — Width of the left theme panel
 
 ### 5. UI Components
 

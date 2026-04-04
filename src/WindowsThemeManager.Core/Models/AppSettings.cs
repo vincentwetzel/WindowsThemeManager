@@ -51,6 +51,11 @@ public class AppSettings
     public int ThumbnailMaxHeight { get; set; } = 300;
 
     /// <summary>
+    /// Application theme mode (Light, Dark, or System).
+    /// </summary>
+    public AppThemeMode ThemeMode { get; set; } = AppThemeMode.System;
+
+    /// <summary>
     /// Gets the default settings.
     /// </summary>
     public static AppSettings Default => new();

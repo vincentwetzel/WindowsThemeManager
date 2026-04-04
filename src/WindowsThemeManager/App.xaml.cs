@@ -6,6 +6,7 @@ using WindowsThemeManager.Core.Interfaces;
 using WindowsThemeManager.Core.Services;
 using WindowsThemeManager.Services;
 using WindowsThemeManager.ViewModels;
+using WindowsThemeManager.Core.Models;
 
 namespace WindowsThemeManager;
 
@@ -18,9 +19,32 @@ public partial class App : Application
     private TextWriterTraceListener? _traceListener;
 
     /// <summary>
+    /// Gets the application's service provider.
+    /// </summary>
+    public static IServiceProvider? Services => Current is App app ? app._serviceProvider : null;
+
+    /// <summary>
     /// Configures the DI container and starts the application.
     /// </summary>
-    private void Application_Startup(object sender, StartupEventArgs e)
+    private async void Application_Startup(object sender, StartupEventArgs e)
+    {
+        try
+        {
+            await RunStartup();
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"[{DateTime.Now:O}] [App] FATAL ERROR during startup: {ex.GetType().Name}: {ex.Message}");
+            Trace.WriteLine($"[{DateTime.Now:O}] [App] Stack trace: {ex.StackTrace}");
+            System.Windows.MessageBox.Show(
+                $"Fatal error during startup:\n\n{ex.GetType().Name}: {ex.Message}\n\nSee log for details.",
+                "Windows Theme Manager - Startup Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private async Task RunStartup()
     {
         var logDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -43,6 +67,7 @@ public partial class App : Application
         Trace.WriteLine($"[{DateTime.Now:O}] [App] Debug log file: {logFilePath}");
         Trace.WriteLine($"[{DateTime.Now:O}] [App] Process ID: {Environment.ProcessId}");
 
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] Building DI container...");
         var services = new ServiceCollection();
 
         // Logging
@@ -71,16 +96,35 @@ public partial class App : Application
 
         // Build the container
         _serviceProvider = services.BuildServiceProvider();
-
-        // Create main window first
-        var mainWindow = new MainWindow
-        {
-            DataContext = _serviceProvider.GetRequiredService<MainViewModel>()
-        };
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] DI container built.");
 
         // Load settings synchronously to avoid threading issues
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] Loading settings...");
         var settingsService = _serviceProvider.GetRequiredService<SettingsService>();
-        settingsService.LoadAsync().GetAwaiter().GetResult();
+        await settingsService.LoadAsync();
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] Settings loaded. ThemeMode: {settingsService.Settings.ThemeMode}");
+
+        // Create main window
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] Creating MainWindow...");
+        var mainWindow = new MainWindow();
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] MainWindow created.");
+
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] Resolving MainViewModel...");
+        var viewModel = _serviceProvider.GetRequiredService<MainViewModel>();
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] MainViewModel resolved.");
+        mainWindow.DataContext = viewModel;
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] DataContext set.");
+
+        // Set initial theme
+        try
+        {
+            mainWindow.SetThemeMode(settingsService.Settings.ThemeMode);
+            Trace.WriteLine($"[{DateTime.Now:O}] [App] Theme mode set.");
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"[{DateTime.Now:O}] [App] Error setting theme mode: {ex.Message}");
+        }
 
         // Apply saved window settings
         if (settingsService.Settings.WindowMaximized)
@@ -92,13 +136,13 @@ public partial class App : Application
         }
 
         // Show the window
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] Showing main window...");
         mainWindow.Show();
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] Window shown. WindowState: {mainWindow.WindowState}, Width: {mainWindow.Width}, Height: {mainWindow.Height}");
 
-        // Trigger initial load (fire and forget)
-        if (mainWindow.DataContext is MainViewModel vm)
-        {
-            _ = vm.LoadAsync();
-        }
+        // Trigger initial load
+        Trace.WriteLine($"[{DateTime.Now:O}] [App] Triggering VM load...");
+        _ = viewModel.LoadAsync();
     }
 
     protected override void OnExit(ExitEventArgs e)
