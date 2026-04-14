@@ -110,67 +110,91 @@ public partial class MainWindow : System.Windows.Window, INotifyPropertyChanged
         }
     }
 
-    /// <summary>
-    /// Window-level PreviewMouseDown. Uses coordinate-based hit testing on the Canvas.
-    /// </summary>
-    private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    private void MonitorPreviewBorder_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (DataContext is not MainViewModel mainVm)
-            return;
-
-        if (mainVm.Monitors.Count == 0)
-            return;
-
-        var canvas = FindVisualChild<Canvas>(MonitorsItemsControl);
-        if (canvas == null)
-            return;
-
-        var clickPoint = e.GetPosition(canvas);
-
-        foreach (var monitor in mainVm.Monitors)
+        if (sender is FrameworkElement fe && fe.DataContext is MonitorItemViewModel monitor)
         {
-            double left = monitor.CanvasLeft;
-            double top = monitor.CanvasTop;
-            double right = left + monitor.CanvasWidth;
-            double bottom = top + monitor.CanvasHeight;
-
-            if (clickPoint.X >= left && clickPoint.X <= right &&
-                clickPoint.Y >= top && clickPoint.Y <= bottom)
+            if (monitor.OpenWallpaperCommand.CanExecute(null))
             {
-                if (!string.IsNullOrEmpty(monitor.WallpaperPath) && System.IO.File.Exists(monitor.WallpaperPath))
-                {
-                    try
-                    {
-                        var psi = new System.Diagnostics.ProcessStartInfo
-                        {
-                            FileName = monitor.WallpaperPath,
-                            UseShellExecute = true
-                        };
-                        System.Diagnostics.Process.Start(psi);
-                    }
-                    catch (System.Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[MainWindow] Failed to open wallpaper: {ex.Message}");
-                    }
-                }
-
+                monitor.OpenWallpaperCommand.Execute(null);
                 e.Handled = true;
-                return;
             }
         }
     }
 
-    private static T? FindVisualChild<T>(DependencyObject? parent) where T : DependencyObject
+    private void DeleteWallpaperButton_Click(object sender, RoutedEventArgs e)
     {
-        if (parent == null) return null;
-        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        if (sender is FrameworkElement fe && fe.DataContext is MonitorItemViewModel monitor)
         {
-            var child = VisualTreeHelper.GetChild(parent, i);
-            if (child is T t) return t;
-            var found = FindVisualChild<T>(child);
-            if (found != null) return found;
+            if (monitor.DeleteWallpaperCommand.CanExecute(null))
+            {
+                monitor.DeleteWallpaperCommand.Execute(null);
+                e.Handled = true;
+            }
         }
-        return null;
+    }
+
+    private void MonitorAreaGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is not MainViewModel mainVm)
+        {
+            return;
+        }
+
+        var clickPoint = e.GetPosition(MonitorsItemsControl);
+        mainVm.StatusMessage = $"Monitor area click at ({clickPoint.X:F0}, {clickPoint.Y:F0})";
+
+        foreach (var monitor in mainVm.Monitors)
+        {
+            var left = monitor.CanvasLeft;
+            var top = monitor.CanvasTop;
+            var right = left + monitor.CanvasWidth;
+            var bottom = top + monitor.CanvasHeight;
+
+            if (clickPoint.X < left || clickPoint.X > right || clickPoint.Y < top || clickPoint.Y > bottom)
+            {
+                continue;
+            }
+
+            var deleteLeft = right - 40;
+            var deleteTop = top + 8;
+            var deleteRight = right - 8;
+            var deleteBottom = top + 40;
+
+            if (clickPoint.X >= deleteLeft && clickPoint.X <= deleteRight &&
+                clickPoint.Y >= deleteTop && clickPoint.Y <= deleteBottom)
+            {
+                mainVm.StatusMessage = $"Clicked delete on monitor {monitor.MonitorNumber}";
+
+                if (monitor.DeleteWallpaperCommand.CanExecute(null))
+                {
+                    monitor.DeleteWallpaperCommand.Execute(null);
+                    e.Handled = true;
+                }
+                else
+                {
+                    mainVm.StatusMessage = $"Delete command not available for monitor {monitor.MonitorNumber}";
+                }
+
+                return;
+            }
+
+            mainVm.StatusMessage = $"Clicked preview on monitor {monitor.MonitorNumber}";
+
+            if (monitor.OpenWallpaperCommand.CanExecute(null))
+            {
+                monitor.OpenWallpaperCommand.Execute(null);
+                e.Handled = true;
+            }
+            else
+            {
+                mainVm.StatusMessage = $"Open command not available for monitor {monitor.MonitorNumber}";
+            }
+
+            return;
+        }
+
+        mainVm.StatusMessage = $"Monitor area click missed all monitor bounds at ({clickPoint.X:F0}, {clickPoint.Y:F0})";
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -178,3 +202,10 @@ public partial class MainWindow : System.Windows.Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
+
+
+
+
+
+
+

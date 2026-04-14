@@ -9,7 +9,6 @@
         Height="700" Width="1200"
         MinHeight="500" MinWidth="800"
         WindowStartupLocation="CenterScreen"
-        PreviewMouseDown="Window_PreviewMouseDown"
         Name="RootWindow"
         Icon="app-icon.ico">
 
@@ -20,6 +19,7 @@
         <converters:BoolToIconConverter x:Key="BoolToIconConverter"/>
         <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <converters:DoubleToGridLengthConverter x:Key="DoubleToGridLengthConverter"/>
+        <converters:NullToBoolConverter x:Key="NullToBoolConverter"/>
 
         <DataTemplate x:Key="ThemeItemTemplate">
             <Border Padding="8,4"
@@ -59,27 +59,14 @@
         </DataTemplate>
 
         <DataTemplate x:Key="MonitorItemTemplate">
-            <Button Command="{Binding OpenWallpaperCommand}"
-                    Cursor="Hand"
-                    ToolTip="{Binding TooltipText}"
+            <Border ToolTip="{Binding TooltipText}"
                     BorderBrush="{DynamicResource AppMonitorBorder}"
                     BorderThickness="2"
                     Background="{DynamicResource AppMonitorBg}"
                     Padding="0"
-                    Name="MonitorItemButton">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border BorderBrush="{TemplateBinding BorderBrush}"
-                                            BorderThickness="{TemplateBinding BorderThickness}"
-                                            Background="{TemplateBinding Background}">
-                                        <ContentPresenter/>
-                                    </Border>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
+                    MouseLeftButtonUp="MonitorPreviewBorder_MouseLeftButtonUp">
+                <Border.Style>
+                    <Style TargetType="Border">
                         <Style.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="BorderBrush" Value="{DynamicResource AppMonitorHoverBorder}"/>
@@ -87,11 +74,12 @@
                             </Trigger>
                         </Style.Triggers>
                     </Style>
-                </Button.Style>
+                </Border.Style>
                 <Grid>
                     <Image Source="{Binding WallpaperPreview}"
                            Stretch="Uniform"
-                           Opacity="0.8"/>
+                           Opacity="0.8"
+                           Cursor="Hand"/>
                     <Rectangle Fill="{DynamicResource AppMonitorPlaceholder}"
                                Visibility="{Binding WallpaperPreview, Converter={StaticResource NullToVisibilityConverter}}"/>
                     <TextBlock Text="No Wallpaper"
@@ -114,8 +102,53 @@
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                     </Border>
+                    <!-- Red X Delete Button - Top Right Corner -->
+                    <Button Click="DeleteWallpaperButton_Click" Name="DeleteWallpaperButton"
+                            ToolTip="Delete wallpaper from this monitor"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Margin="0,8,8,0"
+                            Width="32"
+                            Height="32"
+                            Background="#FFE0E0"
+                            BorderBrush="#FF0000"
+                            BorderThickness="2"
+                            Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    CornerRadius="16">
+                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#FFB0B0"/>
+                                        <Setter Property="BorderBrush" Value="#CC0000"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="Background" Value="#FF9090"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="✕"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="#CC0000"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Button>
                 </Grid>
-            </Button>
+            </Border>
         </DataTemplate>
     </Window.Resources>
 
@@ -124,90 +157,263 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="{Binding ThemePanelWidth, Mode=TwoWay, Converter={StaticResource DoubleToGridLengthConverter}}"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
 
-        <DockPanel Grid.Column="0" Grid.Row="0" Name="ThemePanelDock" Background="{DynamicResource AppBackground}">
-            <Border DockPanel.Dock="Top" Name="ThemePanelHeaderBorder" Background="{DynamicResource AppSurface}">
-                <StackPanel Margin="12,8">
-                    <TextBlock Name="ThemePanelHeaderText" Text="Available Themes"
-                               FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource AppTextPrimary}" Margin="0,0,0,4"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                        <Button Content="Refresh" Command="{Binding RefreshCommand}" Padding="8,4" FontSize="11"/>
-                        <TextBlock Text="{Binding StatusMessage}"
-                                   FontSize="10" Foreground="{DynamicResource AppTextSecondary}" VerticalAlignment="Center"
-                                   Margin="8,0,0,0" TextTrimming="CharacterEllipsis"/>
+        <TabControl Grid.Row="0" SelectedIndex="0">
+            <!-- Themes & Monitors Tab -->
+            <TabItem Header="Themes &amp; Monitors">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="{Binding ThemePanelWidth, Mode=TwoWay, Converter={StaticResource DoubleToGridLengthConverter}}"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <DockPanel Grid.Column="0" Name="ThemePanelDock" Background="{DynamicResource AppBackground}">
+                        <Border DockPanel.Dock="Top" Name="ThemePanelHeaderBorder" Background="{DynamicResource AppSurface}">
+                            <StackPanel Margin="12,8">
+                                <TextBlock Name="ThemePanelHeaderText" Text="Available Themes"
+                                           FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource AppTextPrimary}" Margin="0,0,0,4"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+                                    <Button Content="Refresh" Command="{Binding RefreshCommand}" Padding="8,4" FontSize="11"/>
+                                    <TextBlock Text="{Binding StatusMessage}"
+                                               FontSize="10" Foreground="{DynamicResource AppTextSecondary}" VerticalAlignment="Center"
+                                               Margin="8,0,0,0" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Name="LoadingBorder" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Background="{DynamicResource AppLoadingOverlay}" Panel.ZIndex="1">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="⏳" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,12" Foreground="{DynamicResource AppLoadingIcon}">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform CenterX="16" CenterY="16"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock Text="Loading themes..." FontSize="14" HorizontalAlignment="Center" Foreground="{DynamicResource AppLoadingText}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <ListBox ItemsSource="{Binding Themes}"
+                                 ItemTemplate="{StaticResource ThemeItemTemplate}"
+                                 SelectedItem="{Binding SelectedTheme}"
+                                 Background="Transparent" BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                    </DockPanel>
+
+                    <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center"
+                                  VerticalAlignment="Stretch" Cursor="SizeWE"
+                                  Name="MainGridSplitter" Background="{DynamicResource AppGridSplitter}"/>
+
+                    <Grid Grid.Column="2" Name="MonitorAreaGrid" Background="{DynamicResource AppSurfaceAlt}" PreviewMouseLeftButtonUp="MonitorAreaGrid_PreviewMouseLeftButtonUp">
+                        <TextBlock Name="MonitorAreaHeaderText" Text="Monitor Layout"
+                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource AppMonitorHeaderText}"
+                                   Margin="16,12,0,0" Panel.ZIndex="1"/>
+
+                        <Border Name="MonitorLoadingBorder" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Background="{DynamicResource AppLoadingOverlay}" Panel.ZIndex="2"
+                                IsHitTestVisible="False">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="⏳" FontSize="32" Foreground="{DynamicResource AppLoadingIcon}"
+                                           HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                <TextBlock Text="Detecting monitors..." FontSize="14" Foreground="{DynamicResource AppLoadingText}"
+                                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="20">
+                            <Viewbox Stretch="Uniform" StretchDirection="Both">
+                                <ItemsControl ItemsSource="{Binding Monitors}"
+                                              ItemTemplate="{StaticResource MonitorItemTemplate}"
+                                              Name="MonitorsItemsControl" Width="800" Height="600">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas Background="Transparent" Width="800" Height="600"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemContainerStyle>
+                                        <Style>
+                                            <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}"/>
+                                            <Setter Property="Canvas.Top" Value="{Binding CanvasTop}"/>
+                                            <Setter Property="Canvas.Width" Value="{Binding CanvasWidth}"/>
+                                            <Setter Property="Canvas.Height" Value="{Binding CanvasHeight}"/>
+                                        </Style>
+                                    </ItemsControl.ItemContainerStyle>
+                                </ItemsControl>
+                            </Viewbox>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- Desktop Icons Tab -->
+            <TabItem Header="Desktop Icons">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Background="{DynamicResource AppBackground}" Margin="16" MaxWidth="900" HorizontalAlignment="Left">
+
+                        <!-- Header Section -->
+                        <StackPanel Margin="0,0,0,16">
+                            <TextBlock Text="Desktop Icon Backup &amp; Restore"
+                                       FontSize="20" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AppTextPrimary}"
+                                       Margin="0,0,0,8"/>
+                            <TextBlock Text="Save and restore your desktop icon positions. This is useful when icons get rearranged after display changes or Windows updates."
+                                       FontSize="12"
+                                       Foreground="{DynamicResource AppTextSecondary}"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding DesktopIcon.StatusMessage}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource AppAccent}"
+                                       Margin="0,8,0,0"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <!-- Capture Section -->
+                        <Border Background="{DynamicResource AppSurface}"
+                                BorderBrush="{DynamicResource AppGridSplitter}"
+                                BorderThickness="1" CornerRadius="8"
+                                Padding="16" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Current Desktop Layout"
+                                           FontSize="16" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextPrimary}"
+                                           Margin="0,0,0,12"/>
+
+                                <WrapPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <Button Content="📷 Capture Current Layout"
+                                            Command="{Binding DesktopIcon.CaptureLayoutCommand}"
+                                            Padding="12,6"
+                                            FontSize="12"
+                                            Margin="0,0,8,8"/>
+                                    <Button Content="💾 Save Backup As..."
+                                            Command="{Binding DesktopIcon.SaveCapturedLayoutCommand}"
+                                            Padding="12,6"
+                                            FontSize="12"
+                                            Margin="0,0,8,8"/>
+                                    <Button Content="📂 Open Backups Folder"
+                                            Command="{Binding DesktopIcon.OpenBackupsFolderCommand}"
+                                            Padding="12,6"
+                                            FontSize="12"
+                                            Margin="0,0,8,8"/>
+                                    <Button Content="⬆ Restore Captured"
+                                            Command="{Binding DesktopIcon.RestoreCapturedLayoutCommand}"
+                                            Padding="12,6"
+                                            FontSize="12"
+                                            Margin="0,0,8,8"
+                                            IsEnabled="{Binding DesktopIcon.CurrentLayout, Converter={StaticResource NullToBoolConverter}}"/>
+                                </WrapPanel>
+
+                                <!-- Current Layout Info -->
+                                <StackPanel Visibility="{Binding DesktopIcon.CurrentLayout, Converter={StaticResource NullToVisibilityConverter}}">
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource AppTextSecondary}" Margin="0,0,0,4">
+                                        <Run Text="Captured: "/>
+                                        <Run Text="{Binding DesktopIcon.CurrentLayout.SavedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource AppTextSecondary}" Margin="0,0,0,4">
+                                        <Run Text="Icons: "/>
+                                        <Run Text="{Binding DesktopIcon.CurrentLayout.Icons.Count}"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource AppTextSecondary}" Margin="0,0,0,4">
+                                        <Run Text="Resolution: "/>
+                                        <Run Text="{Binding DesktopIcon.CurrentLayout.DisplayResolution}"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource AppTextSecondary}">
+                                        <Run Text="DPI Scale: "/>
+                                        <Run Text="{Binding DesktopIcon.CurrentLayout.DpiScale}"/>
+                                        <Run Text="%"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Load from File Section -->
+                        <Border Background="{DynamicResource AppSurface}"
+                                BorderBrush="{DynamicResource AppGridSplitter}"
+                                BorderThickness="1" CornerRadius="8"
+                                Padding="16" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Load from File"
+                                           FontSize="16" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextPrimary}"
+                                           Margin="0,0,0,12"/>
+
+                                <WrapPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <Button Content="📂 Load File..."
+                                            Command="{Binding DesktopIcon.LoadLayoutFromFileCommand}"
+                                            Padding="12,6"
+                                            FontSize="12"
+                                            Margin="0,0,8,8"/>
+                                    <Button Content="⬇ Restore Loaded"
+                                            Command="{Binding DesktopIcon.RestoreSavedLayoutCommand}"
+                                            Padding="12,6"
+                                            FontSize="12"
+                                            Margin="0,0,8,8"
+                                            IsEnabled="{Binding DesktopIcon.SavedLayout, Converter={StaticResource NullToBoolConverter}}"/>
+                                </WrapPanel>
+
+                                <!-- Loaded Layout Info -->
+                                <StackPanel Visibility="{Binding DesktopIcon.SavedLayout, Converter={StaticResource NullToVisibilityConverter}}">
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource AppTextSecondary}" Margin="0,0,0,4">
+                                        <Run Text="File: "/>
+                                        <Run Text="{Binding DesktopIcon.SelectedFilePath}"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource AppTextSecondary}" Margin="0,0,0,4">
+                                        <Run Text="Icons: "/>
+                                        <Run Text="{Binding DesktopIcon.SavedLayout.Icons.Count}"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource AppTextSecondary}">
+                                        <Run Text="Captured: "/>
+                                        <Run Text="{Binding DesktopIcon.SavedLayout.SavedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Saved Layouts List -->
+                        <Border Background="{DynamicResource AppSurface}"
+                                BorderBrush="{DynamicResource AppGridSplitter}"
+                                BorderThickness="1" CornerRadius="8"
+                                Padding="16" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Saved Layouts"
+                                           FontSize="16" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppTextPrimary}"
+                                           Margin="0,0,0,12"/>
+
+                                <ListBox ItemsSource="{Binding DesktopIcon.SavedLayouts}"
+                                         SelectedItem="{Binding DesktopIcon.SelectedLayoutName}"
+                                         MaxHeight="200"
+                                         Margin="0,0,0,12">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <WrapPanel Orientation="Horizontal">
+                                    <Button Content="⬆ Restore Selected"
+                                            Command="{Binding DesktopIcon.RestoreSelectedLayoutCommand}"
+                                            Padding="12,6"
+                                            FontSize="12"
+                                            Margin="0,0,8,8"/>
+                                    <Button Content="🗑 Delete Selected"
+                                            Command="{Binding DesktopIcon.DeleteSelectedLayoutCommand}"
+                                            Padding="12,6"
+                                            FontSize="12"
+                                            Margin="0,0,8,8"
+                                            Background="#FFE0E0"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <Border Name="LoadingBorder" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="{DynamicResource AppLoadingOverlay}" Panel.ZIndex="1">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="⏳" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,12" Foreground="{DynamicResource AppLoadingIcon}">
-                        <TextBlock.RenderTransform>
-                            <RotateTransform CenterX="16" CenterY="16"/>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                    <TextBlock Text="Loading themes..." FontSize="14" HorizontalAlignment="Center" Foreground="{DynamicResource AppLoadingText}"/>
-                </StackPanel>
-            </Border>
-
-            <ListBox ItemsSource="{Binding Themes}"
-                     ItemTemplate="{StaticResource ThemeItemTemplate}"
-                     SelectedItem="{Binding SelectedTheme}"
-                     Background="Transparent" BorderThickness="0"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-        </DockPanel>
-
-        <GridSplitter Grid.Column="1" Grid.Row="0" Width="4" HorizontalAlignment="Center"
-                      VerticalAlignment="Stretch" Cursor="SizeWE"
-                      Name="MainGridSplitter" Background="{DynamicResource AppGridSplitter}"/>
-
-        <Grid Grid.Column="2" Grid.Row="0" Name="MonitorAreaGrid" Background="{DynamicResource AppSurfaceAlt}">
-            <TextBlock Name="MonitorAreaHeaderText" Text="Monitor Layout"
-                       FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource AppMonitorHeaderText}"
-                       Margin="16,12,0,0" Panel.ZIndex="1"/>
-
-            <Border Name="MonitorLoadingBorder" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="{DynamicResource AppLoadingOverlay}" Panel.ZIndex="2">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="⏳" FontSize="32" Foreground="{DynamicResource AppLoadingIcon}"
-                               HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                    <TextBlock Text="Detecting monitors..." FontSize="14" Foreground="{DynamicResource AppLoadingText}"
-                               VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                </StackPanel>
-            </Border>
-
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="20">
-                <Viewbox Stretch="Uniform" StretchDirection="Both">
-                    <ItemsControl ItemsSource="{Binding Monitors}"
-                                  ItemTemplate="{StaticResource MonitorItemTemplate}"
-                                  Name="MonitorsItemsControl" Width="800" Height="600">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <Canvas Background="Transparent" Width="800" Height="600"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemContainerStyle>
-                            <Style>
-                                <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}"/>
-                                <Setter Property="Canvas.Top" Value="{Binding CanvasTop}"/>
-                                <Setter Property="Canvas.Width" Value="{Binding CanvasWidth}"/>
-                                <Setter Property="Canvas.Height" Value="{Binding CanvasHeight}"/>
-                            </Style>
-                        </ItemsControl.ItemContainerStyle>
-                    </ItemsControl>
-                </Viewbox>
-            </ScrollViewer>
-        </Grid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
 
         <!-- Status bar with theme selector -->
-        <Border Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1"
+        <Border Grid.Row="1"
                 Name="StatusBarBorder" Background="{DynamicResource AppSurface}"
                 BorderBrush="{DynamicResource AppGridSplitter}" BorderThickness="0,1,0,0" Padding="12,4">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -224,3 +430,12 @@
         </Border>
     </Grid>
 </Window>
+
+
+
+
+
+
+
+
+

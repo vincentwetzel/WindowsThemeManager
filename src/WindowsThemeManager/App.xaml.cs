@@ -83,6 +83,7 @@ public partial class App : Application
         services.AddSingleton<IThemeApplier, ThemeApplier>();
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IMonitorService, MonitorService>();
+        services.AddSingleton<IDesktopIconService, DesktopIconService>();
 
         // Settings (load on startup)
         services.AddSingleton<SettingsService>();
@@ -93,6 +94,7 @@ public partial class App : Application
 
         // ViewModels
         services.AddTransient<MainViewModel>();
+        services.AddTransient<DesktopIconViewModel>();
 
         // Build the container
         _serviceProvider = services.BuildServiceProvider();

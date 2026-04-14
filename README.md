@@ -4,62 +4,57 @@ A modern Windows desktop application for managing themes and monitor wallpapers 
 
 ## Overview
 
-This application provides an enhanced theme management experience by:
-- **Theme Browser**: Lists all available themes from common Windows theme directories
-- **One-Click Activation**: Apply any theme with a single click
-- **Visual Monitor Layout**: Displays your monitors in their actual relative positions (like Windows Display Settings)
-- **Live Wallpaper Preview**: Shows the current wallpaper displayed on each monitor
-- **Quick Access**: Click any monitor preview to open the wallpaper in your default image viewer
+Windows Theme Manager provides an enhanced theme management experience by:
+- Discovering themes from common Windows theme folders
+- Applying themes with a single click
+- Showing a visual monitor layout with live wallpaper previews
+- Opening a monitor wallpaper in the system default image viewer
+- Confirming deletions before moving a wallpaper to the Recycle Bin
 
 ## Features
 
 - Discover and manage themes from multiple Windows theme directories
 - Visual representation of multi-monitor setups with current wallpapers
 - Click-to-apply theme selection
-- Click-to-open wallpaper files for quick editing/viewing
-- **Light/Dark/System theme selector** in the status bar for app UI theming
-- **Persistent settings** — theme preference, window size, and panel width are saved between sessions
-- **Async startup** — non-blocking settings load prevents UI thread deadlocks
-- **Resizable monitor canvas** with Viewbox scaling for accurate multi-monitor visualization
+- Click-to-open wallpaper files for quick viewing or editing
+- Red X delete action on each monitor preview with recycle-bin confirmation
+- Light/Dark/System theme selector in the status bar for app UI theming
+- Persistent settings for theme preference, window size, and panel width
+- Async startup so settings load without blocking the UI thread
+- Resizable monitor canvas with Viewbox scaling for accurate multi-monitor visualization
 - Native Windows integration
-- **Real-time wallpaper updates**: Automatically detects and displays wallpaper changes via Windows COM events (no polling allowed)
+- Real-time wallpaper updates through Windows COM events
 
 ### Wallpaper Change Detection Requirement
 
-**CRITICAL**: The application MUST use the `IDesktopWallpaper.Advise()` COM interface to receive wallpaper change events from Windows. 
+**CRITICAL**: The application uses the `IDesktopWallpaper` COM event stream to receive wallpaper change events from Windows.
 
-**Polling is strictly forbidden** for detecting wallpaper changes. The COM callback approach provides instant, zero-latency notifications when wallpapers change on any monitor. This is a hard architectural requirement that all agents must follow.
-
-### No Polling Rule
-
-- Wallpaper changes must be detected only through the `IDesktopWallpaper` COM event stream.
-- Do not add timers, background refresh loops, file watchers, registry polling, or any other polling-based fallback for wallpaper change detection.
-- If the COM subscription fails, fix the COM event path rather than introducing periodic checks.
+Polling is not used for wallpaper change detection. If the COM subscription fails, fix the COM event path instead of introducing timers, file watchers, or refresh loops.
 
 ### Debugging Requirement
 
-- When a feature is stuck in debugging, add targeted debug prints or structured logs before continuing to guess at fixes.
-- Diagnostics must make it clear which stage is succeeding or failing, especially around COM subscription, callback delivery, UI refresh, and image loading.
-- Remove or downgrade temporary diagnostics once the issue is resolved, but always prefer observable debugging over speculative changes while a bug is still unresolved.
+- When a feature is stuck, add targeted debug prints or structured logs before continuing to guess at fixes.
+- Diagnostics should make it clear which stage is succeeding or failing, especially around COM hookup, callback delivery, UI refresh, image loading, and file launch/delete actions.
+- Remove or downgrade temporary diagnostics once the issue is resolved.
 
 ## Tech Stack
 
-- **Language**: C#
-- **Framework**: .NET (WPF/WinUI 3 - TBD)
-- **Platform**: Windows 10/11
+- Language: C#
+- Framework: .NET (WPF)
+- Platform: Windows 10/11
 
 ## Project Structure
 
 ```
 WindowsThemeManager/
-├── src/                    # Source code
-│   ├── WindowsThemeManager/           # Main application
-│   ├── WindowsThemeManager.Core/      # Core logic and models
-│   └── WindowsThemeManager.Tests/     # Unit tests
-├── docs/                     # Documentation
+├── src/
+│   ├── WindowsThemeManager/
+│   ├── WindowsThemeManager.Core/
+│   └── WindowsThemeManager.Tests/
 ├── README.md
 ├── ARCHITECTURE.md
 ├── CONTRIBUTING.md
+├── CHANGELOG.md
 └── IMPLEMENTATION_PLAN.md
 ```
 
@@ -74,20 +69,16 @@ WindowsThemeManager/
 ### Building the Project
 
 ```bash
-# Restore dependencies
 dotnet restore
-
-# Build the project
 dotnet build
-
-# Run the application
 dotnet run --project src/WindowsThemeManager
 ```
 
 ## Documentation
 
 - [Architecture](ARCHITECTURE.md) - Technical design and system architecture
-- [Implementation Plan](IMPLEMENTATION_PLAN.md) - Detailed TODO tasks and development roadmap
+- [Implementation Plan](IMPLEMENTATION_PLAN.md) - Completed roadmap and implementation notes
+- [Changelog](CHANGELOG.md) - User-facing changes by release
 - [Contributing](CONTRIBUTING.md) - Development guidelines
 
 ## License

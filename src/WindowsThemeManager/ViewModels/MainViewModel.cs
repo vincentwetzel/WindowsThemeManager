@@ -26,6 +26,11 @@ public partial class MainViewModel : ObservableObject
     private readonly object _wallpaperRefreshGate = new();
     private CancellationTokenSource? _wallpaperRefreshCts;
 
+    /// <summary>
+    /// The desktop icon backup/restore ViewModel.
+    /// </summary>
+    public DesktopIconViewModel DesktopIcon { get; }
+
     [ObservableProperty]
     private bool _isLoading;
 
@@ -57,6 +62,7 @@ public partial class MainViewModel : ObservableObject
         IWallpaperImageService imageService,
         SettingsService settings,
         IDialogService dialogService,
+        DesktopIconViewModel desktopIconViewModel,
         ILogger<MainViewModel> logger)
     {
         _themeService = themeService;
@@ -65,6 +71,7 @@ public partial class MainViewModel : ObservableObject
         _settings = settings;
         _dialogService = dialogService;
         _logger = logger;
+        DesktopIcon = desktopIconViewModel;
 
         ThemePanelWidth = settings.Settings.ThemePanelWidth;
         _themeService.ThemeChanged += OnThemeChanged;
@@ -114,7 +121,7 @@ public partial class MainViewModel : ObservableObject
                 Monitors.Clear();
                 foreach (var monitor in layout.Monitors)
                 {
-                    var vm = new MonitorItemViewModel(monitor, _imageService);
+                    var vm = new MonitorItemViewModel(monitor, _imageService, _dialogService);
                     Monitors.Add(vm);
                 }
             });

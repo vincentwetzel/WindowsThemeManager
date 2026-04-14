@@ -19,22 +19,34 @@ public class DialogService : IDialogService
 
     public void ShowInfo(string message, string title = "Information")
     {
-        MessageBox.Show(_owner, message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+        ShowMessage(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     public void ShowWarning(string message, string title = "Warning")
     {
-        MessageBox.Show(_owner, message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+        ShowMessage(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     public void ShowError(string message, string title = "Error")
     {
-        MessageBox.Show(_owner, message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+        ShowMessage(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     public bool ShowConfirmation(string message, string title = "Confirm")
     {
-        return MessageBox.Show(_owner, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question)
+        return ShowMessage(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question)
             == MessageBoxResult.Yes;
     }
+
+    private MessageBoxResult ShowMessage(
+        string message,
+        string title,
+        MessageBoxButton button,
+        MessageBoxImage icon)
+    {
+        return _owner is null
+            ? MessageBox.Show(message, title, button, icon)
+            : MessageBox.Show(_owner, message, title, button, icon);
+    }
 }
+

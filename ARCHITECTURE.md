@@ -2,283 +2,70 @@
 
 ## System Overview
 
-Windows Theme Manager is a C# desktop application that provides enhanced theme management capabilities with visual monitor layout and wallpaper preview functionality.
+Windows Theme Manager is a C# desktop application that provides enhanced theme management capabilities with visual monitor layout, live wallpaper previews, and direct wallpaper actions from each monitor preview.
 
 ## High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Presentation Layer                      │
-│  ┌─────────────────┐  ┌──────────────────────────────────┐  │
-│  │  Theme Browser  │  │    Monitor Layout Display        │  │
-│  │  (Left Panel)   │  │    (Main Area)                   │  │
-│  │                 │  │  ┌────┐     ┌────┐              │  │
-│  │  - Theme List   │  │  │ M1 │     │ M2 │              │  │
-│  │  - Search/Filter│  │  └────┘     └────┘              │  │
-│  │  - Preview      │  │                                  │  │
-│  └────────┬────────┘  └──────────┬───────────────────────┘  │
-└───────────┼──────────────────────┼──────────────────────────┘
-            │                      │
-┌───────────┼──────────────────────┼──────────────────────────┐
-│           ▼         Service      ▼         Layer            │
-│  ┌─────────────────┐  ┌──────────────────────────────────┐  │
-│  │  Theme Service  │  │    Monitor Service               │  │
-│  │                 │  │                                  │  │
-│  │  - Scan themes  │  │  - Detect monitors               │  │
-│  │  - Parse .theme │  │  - Get positions/resolutions     │  │
-│  │  - Apply theme  │  │  - Get current wallpaper per mon │  │
-│  └────────┬────────┘  └────────┬─────────────────────────┘  │
-└───────────┼────────────────────┼────────────────────────────┘
-            │                    │
-┌───────────┼────────────────────┼────────────────────────────┐
-│           ▼     Data &         ▼       System Layer         │
-│  ┌─────────────────┐  ┌──────────────────────────────────┐  │
-│  │  Theme Models   │  │    Windows APIs                  │  │
-│  │                 │  │                                  │  │
-│  │  - Theme        │  │  - Registry access               │  │
-│  │  - Wallpaper    │  │  - Win32 Display APIs            │  │
-│  │  - Cursor/etc   │  │  - SystemParametersInfo          │  │
-│  └─────────────────┘  └──────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
+The app is organized around a WPF presentation layer, MVVM view models, and service classes that handle theme discovery, monitor layout, wallpaper image loading, and user dialogs.
 
 ## Core Components
 
-### 1. Theme Discovery Service
+### Theme Discovery
 
-**Responsibility**: Scan Windows theme directories and parse theme files.
+Scans the standard Windows theme directories and parses `.theme` files into app models.
 
-**Key Locations**:
-- `%LOCALAPPDATA%\Microsoft\Windows\Themes`
-- `C:\Windows\Resources\Themes`
-- `%APPDATA%\Microsoft\Windows\Themes`
+### Theme Application
 
-**Theme File Structure** (.theme files are INI-format):
-```ini
-[Theme]
-DisplayName=My Theme
+Applies the selected theme by updating Windows settings and refreshing the UI state.
 
-[Control Panel\Desktop]
-Wallpaper=C:\path\to\wallpaper.jpg
+### Monitor Detection
 
-[VisualStyles]
-Path=C:\path\to\visualstyle.msstyles
-```
+Detects connected monitors, their bounds, primary status, and current wallpaper source.
 
-### 2. Theme Application Service
+### Wallpaper Management
 
-**Responsibility**: Apply themes by updating Windows settings.
+Tracks current wallpaper files per monitor, loads preview thumbnails, and exposes open/delete actions for the UI.
 
-**Operations**:
-- Set desktop wallpaper
-- Apply visual styles (.msstyles)
-- Update cursor scheme
-- Update color scheme
-- Update sound scheme
+### Dialog Service
 
-### 3. Monitor Detection Service
+Provides a WPF message-box wrapper for information, warning, error, and confirmation dialogs. The service now falls back to the ownerless `MessageBox.Show(...)` overload when no owner window has been assigned, which prevents null-owner crashes during monitor deletion.
 
-**Responsibility**: Detect connected monitors and their configuration.
+## Monitor Layout UI
 
-**Information Gathered**:
-- Monitor count
-- Resolution per monitor
-- Relative positions (primary/secondary layout)
-- Current wallpaper per monitor
-- Device names
+- The monitor area uses a Canvas-based layout inside a Viewbox so monitor positions stay proportional.
+- Clicking the wallpaper area opens that monitor's wallpaper in the default image viewer.
+- Clicking the red X confirms deletion and moves the wallpaper to the Recycle Bin.
+- The monitor-area root handles click routing so the interaction remains reliable inside the scaled layout.
 
-### 4. Wallpaper Management Service
+## Wallpaper Change Detection
 
-**Responsibility**: Track and manage wallpaper files per monitor.
-
-**Registry Key**:
-`HKEY_CURRENT_USER\Control Panel\Desktop`
-- `WallPaper` - Default wallpaper path
-- `TranscodedImageCache` - Current wallpaper (binary)
-
-For per-monitor wallpapers (Windows 10/11):
-`HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Wallpapers`
-
-**Wallpaper change detection rule**:
-- Poll `IDesktopWallpaper.GetWallpaper()` every 2 seconds to detect wallpaper advances and slideshow transitions.
-- `IDesktopWallpaper.GetWallpaper()` is a cheap COM call — no file I/O, no registry scanning.
-- Compare cached wallpaper paths per monitor; only fire events when a change is detected.
-- This is the only accepted polling mechanism in the codebase.
-- `IDesktopWallpaper` is the definitive source of truth for per-monitor wallpaper state.
-- Do NOT use `SystemEvents.UserPreferenceChanged`, `SHChangeNotifyRegister`, or `FileSystemWatcher` for wallpaper detection — these have been proven unreliable for multi-monitor slideshow advances.
-
-### 4a. Theme Manager Service (Static Helper)
-
-**Responsibility**: Detect system-wide light/dark theme settings from the Windows registry.
-
-**Location**: `WindowsThemeManager.Services.ThemeManager`
-
-**Key Methods**:
-- `GetEffectiveTheme(AppThemeMode)` — Returns the effective theme (Light, Dark, or System). If System, reads the registry to determine.
-- `IsWindowsDarkMode()` — Reads `HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize\AppsUseLightTheme` to check if Windows is in dark mode.
-
-### 4b. Settings Persistence
-
-**Responsibility**: Persist and restore user preferences between application sessions.
-
-**Location**: `WindowsThemeManager.Core.Services.SettingsService`
-
-**Settings File**: `%LOCALAPPDATA%\WindowsThemeManager\settings.json`
-
-**Persisted Properties**:
-- `ThemeMode` — AppThemeMode (System, Light, Dark)
-- `WindowWidth` / `WindowHeight` — Last window dimensions
-- `WindowMaximized` — Whether the window was maximized
-- `ThemePanelWidth` — Width of the left theme panel
-
-### 4c. Centralized Theme System
-
-**Responsibility**: Single source of truth for all application UI colors. No hardcoded colors are allowed anywhere else in the app.
-
-**Location**: `WindowsThemeManager.Themes`
-
-**Components**:
-
-| File | Purpose |
-|------|---------|
-| `AppThemeColors.cs` | Static class defining all color values as named properties. Contains both `LightPalette` and `DarkPalette` snapshots. |
-| `ThemeResources.xaml` | WPF ResourceDictionary with named `SolidColorBrush` entries for every color (light and dark variants stored as `KeyName.Light` and `KeyName.Dark`). |
-| `ThemeResources.xaml.cs` | Code-behind with `ApplyTheme(bool isDark)` — copies the correct variant into `Application.Current.Resources` so all `DynamicResource` bindings resolve. |
-
-**Design Rules**:
-1. **All colors are defined in one place**: `AppThemeColors.cs`. No other file may contain hardcoded hex color values (`#RRGGBB` or `Color.FromRgb`).
-2. **XAML uses `DynamicResource`**: Every element that has a theme-dependent color references a brush by key (e.g., `{DynamicResource AppBackground}`, `{DynamicResource AppTextPrimary}`).
-3. **Theme switching is one call**: `ThemeResources.ApplyTheme(isDark)` swaps all brushes at once. No per-element color code in `MainWindow.xaml.cs`.
-4. **Shared (theme-independent) colors** like accent highlight colors are defined once in `AppThemeColors` and used by both XAML and converters.
-
-**Brush Key Reference**:
-
-| Brush Key | Light | Dark | Elements |
-|-----------|-------|------|----------|
-| `AppBackground` | `#F5F5F5` | `#2D2D2D` | Window, theme panel |
-| `AppSurface` | `#E8E8E8` | `#252525` | Panel headers, status bar |
-| `AppSurfaceAlt` | `#E0E0E0` | `#1A1A1A` | Monitor area background |
-| `AppTextPrimary` | `#000000` | `#E0E0E0` | Headers, theme names |
-| `AppTextSecondary` | `#808080` | `#999999` | Status text, paths |
-| `AppGridSplitter` | `#CCCCCC` | `#404040` | Column splitter |
-| `AppLoadingOverlay` | `#80FFFFFF` | `#801E1E1E` | Loading overlays |
-| `AppMonitorHeaderText` | `#202020` | `#E0E0E0` | "Monitor Layout" text |
-| `AppMonitorBg` | `#D5D5D5` | `#1A1A1A` | Monitor item button bg |
-| `AppMonitorBorder` | `#AAAAAA` | `#444444` | Monitor item border |
-| `AppMonitorHoverBorder` | `#0078D4` | `#0078D4` | Hover accent (same both) |
-| `AppMonitorPlaceholder` | `#BBBBBB` | `#2A2A2A` | "No Wallpaper" bg |
-| `AppMonitorBadgeBg` | `#80808080` | `#AA000000` | Badge backgrounds |
-| `AppMonitorBadgeText` | `#202020` | `#FFFFFF` | Badge text |
-| `AppLoadingIcon` | `#000000` | `#E0E0E0` | Loading emoji |
-| `AppLoadingText` | `#333333` | `#E0E0E0` | Loading text |
-| `AppAccentBackground` | `#E3F2FD` | `#E3F2FD` | Active theme highlight (shared) |
-| `AppAccentBorder` | `#1976D2` | `#1976D2` | Active theme border (shared) |
-
-### 5. UI Components
-
-#### Theme Browser Panel (Left Side)
-- ListBox/ListView of available themes
-- Theme name and preview thumbnail
-- Click to select and apply
-
-#### Monitor LayoutPanel (Main Area)
-- Canvas-based rendering of monitor layout
-- Each monitor shows:
-  - Scaled rectangle matching relative position
-  - Current wallpaper as background
-  - Monitor number overlay
-- **Clicking any monitor** opens that monitor's wallpaper in the default photo viewer (Photos app)
-  - Uses `Window.PreviewMouseDown` with coordinate-based hit testing on the Canvas
-  - Compares click coordinates against each monitor's canvas bounds
-  - `Process.Start` with `UseShellExecute=true` launches the default viewer
+- Wallpaper updates are handled through the existing `IDesktopWallpaper` COM event stream.
+- No timers, polling loops, file watchers, or registry refresh jobs are used for wallpaper detection.
+- Debugging should focus on COM hookup, callback delivery, UI refresh, and thumbnail loading.
 
 ## Data Flow
 
-```
-1. App Startup
-   ↓
-2. Theme Service scans directories → Loads Theme objects
-   ↓
-3. Monitor Service queries Windows APIs → Builds MonitorLayout
-   ↓
-4. UI binds to collections
-   ↓
-5. User clicks theme → Theme Service applies → UI updates
-6. User clicks monitor → Shell opens wallpaper file
-```
-
-## Key Windows APIs
-
-| Purpose | API |
-|---------|-----|
-| Get monitor info | `EnumDisplayMonitors`, `GetMonitorInfo` |
-| Set wallpaper | `SystemParametersInfo(SPI_SETDESKWALLPAPER)` |
-| Per-monitor wallpaper | Registry + `IDesktopWallpaper` COM interface |
-| Apply theme | `UXTheme.dll` functions or registry + refresh |
-| Open file | `Process.Start(filepath)` |
-
-## Design Patterns
-
-- **MVVM**: Standard pattern for WPF/WinUI applications
-- **Service Layer**: Separate services for theme, monitor, and wallpaper operations
-- **Repository Pattern**: Theme discovery abstracted behind interface
-- **Observer Pattern**: INotifyPropertyChanged for reactive UI updates
-- **Centralized Theme System**: All UI colors defined in `AppThemeColors.cs`, exposed as `DynamicResource` brushes. No hardcoded colors elsewhere.
-- **Polling-based wallpaper tracking**: `IDesktopWallpaper.GetWallpaper()` polled every 2 seconds is the only accepted mechanism for wallpaper change detection
-- **Observable debugging**: when debugging stalls, add stage-specific diagnostics before attempting more speculative fixes
+1. App startup loads themes and monitor layout.
+2. View models populate the theme list and monitor canvas.
+3. The UI binds to those collections.
+4. Theme clicks apply the selected theme.
+5. Monitor clicks open the wallpaper or confirm deletion.
 
 ## Logging and Diagnostics
 
-### Dual-Output Logging Policy
+- Structured logging is mirrored to file and console/debug output.
+- Temporary diagnostics should clearly identify the stage that is failing.
+- Keep the output focused on wallpaper loading, monitor routing, and dialog presentation when troubleshooting.
 
-**All diagnostic output MUST be mirrored to both destinations:**
-1. **Log files** - Persistent logs at `%LOCALAPPDATA%\WindowsThemeManager\Logs\debug_YYYYMMDD_HHMMSS.log`
-   - Each application run creates a new timestamped log file
-   - Automatic cleanup keeps only the 10 most recent logs
-2. **Console output** - Immediate visibility via `Console.WriteLine` and `System.Diagnostics.Debug.WriteLine`
+## Design Patterns
 
-**Rationale**: Developers need real-time visibility during debugging while maintaining a persistent log for post-mortem analysis. Log cycling prevents disk space issues while preserving recent history.
-
-**Implementation**:
-- Use `ILogger<T>` for structured logging (file output)
-- Mirror all `ILogger` calls with `Console.WriteLine` and `Debug.WriteLine` for:
-  - Service operations (theme discovery, monitor detection, wallpaper changes)
-  - COM callback invocations and event delivery
-  - Error conditions and exceptions
-  - State changes (wallpaper updates, theme applications)
-  - Event subscriptions and unsubscriptions
-
-**Example**:
-```csharp
-// Log to file via ILogger
-_logger.LogInformation("Started listening for wallpaper change events");
-
-// Mirror to console and debug output
-Console.WriteLine("[MonitorService] Started listening for wallpaper change events");
-System.Diagnostics.Debug.WriteLine("[MonitorService] Started listening for wallpaper change events");
-```
-
-### Centralized Color Policy
-
-**Rule**: All application UI colors MUST be defined in `WindowsThemeManager.Themes.AppThemeColors.cs`. No other file may contain hardcoded hex color values (`#RRGGBB` in XAML, `Color.FromRgb`/`Color.FromArgb` in C#).
-
-**Enforcement**:
-- XAML elements use `{DynamicResource AppKey}` to reference theme brushes
-- The `ThemeResources.ApplyTheme(isDark)` method swaps all brushes in one call
-- Converters reference `AppThemeColors.AccentBackground` etc. instead of inline hex strings
-- To change a color, edit `AppThemeColors.cs` only — it propagates everywhere automatically
+- MVVM for UI structure.
+- Service layer for theme, monitor, wallpaper, and dialog operations.
+- Observer pattern through `INotifyPropertyChanged`.
+- Centralized theme resources for all app colors.
 
 ## Dependencies
 
 - .NET 8.0+
-- WPF or WinUI 3 (TBD based on requirements)
-- Windows SDK (for Win32 interop)
-- No external NuGet packages required initially
-
-## Error Handling
-
-- Graceful degradation if theme directories don't exist
-- Fallback for monitors where wallpaper can't be determined
-- User-friendly error messages for theme application failures
-- Logging for troubleshooting
-- Diagnostic logging should clearly identify success/failure boundaries for COM hookup, callback delivery, UI refresh, and image loading when investigating bugs
+- WPF
+- Windows SDK for Win32 interop

@@ -125,3 +125,25 @@ public class DoubleToGridLengthConverter : IValueConverter
         return 300.0;
     }
 }
+
+/// <summary>
+/// Converts null/not-null to boolean (null = false, not-null = true).
+/// Useful for enabling/disabling buttons based on whether a value exists.
+/// </summary>
+public class NullToBoolConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        bool isNull = value == null;
+        
+        bool inverse = parameter is string s && s.Equals("Inverse", StringComparison.OrdinalIgnoreCase);
+        
+        if (inverse)
+            isNull = !isNull;
+        
+        return !isNull;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}

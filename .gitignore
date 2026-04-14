@@ -37,6 +37,7 @@ publish/
 !.vscode/tasks.json
 !.vscode/launch.json
 *.code-workspace
+.VSCodeCounter/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
