@@ -269,11 +269,23 @@ public partial class MainViewModel : ObservableObject
 
         await Application.Current.Dispatcher.InvokeAsync(async () =>
         {
-            // Slideshow advances can affect the rendered image for any monitor, so refresh the full set
-            // and invalidate cached bitmaps instead of trying to update only one item from the event payload.
             Trace.WriteLine($"[{DateTime.Now:O}] [MainViewModel] Dispatcher refresh started");
             _imageService.ClearCache();
-            await ReloadMonitorPreviewsAsync();
+
+            // The event identifies the monitor that changed. Querying the entire
+            // layout here can race Windows' slideshow transition and return empty
+            // paths for every monitor, which would erase valid paths from the UI.
+            // Update only the affected item and keep its last known path when the
+            // shell reports a transient empty value.
+            var monitor = Monitors.FirstOrDefault(m =>
+                string.Equals(m.DeviceName, e.DevicePath, StringComparison.OrdinalIgnoreCase));
+
+            if (monitor != null && !string.IsNullOrWhiteSpace(e.WallpaperPath))
+            {
+                monitor.WallpaperPath = e.WallpaperPath;
+                await monitor.LoadWallpaperPreviewAsync(400, 300);
+            }
+
             Trace.WriteLine($"[{DateTime.Now:O}] [MainViewModel] Dispatcher refresh completed");
 
             StatusMessage = string.IsNullOrEmpty(e.DevicePath)
@@ -293,14 +305,28 @@ public partial class MainViewModel : ObservableObject
             var layout = await _monitorService.GetMonitorLayoutAsync();
             Trace.WriteLine($"[{DateTime.Now:O}] [MainViewModel] ReloadMonitorPreviewsAsync layout monitors={layout.Monitors.Count}");
 
-            for (int i = 0; i < Monitors.Count && i < layout.Monitors.Count; i++)
+            // COM enumeration order is not a stable monitor identity. Match by the
+            // device path so a display re-enumeration cannot assign one monitor's
+            // wallpaper to another monitor's tile.
+            var refreshedMonitors = layout.Monitors.ToDictionary(
+                m => m.DeviceName,
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (var monitor in Monitors)
             {
-                var monitor = Monitors[i];
-                var newWallpaper = layout.Monitors[i].CurrentWallpaperPath;
+                if (!refreshedMonitors.TryGetValue(monitor.DeviceName, out var refreshedMonitor))
+                    continue;
+
+                var newWallpaper = refreshedMonitor.CurrentWallpaperPath;
                 Trace.WriteLine(
                     $"[{DateTime.Now:O}] [MainViewModel] Reloading monitor {monitor.MonitorNumber} device={monitor.DeviceName} old={monitor.WallpaperPath ?? "(null)"} new={newWallpaper ?? "(null)"}");
-                monitor.WallpaperPath = newWallpaper;
-                await monitor.LoadWallpaperPreviewAsync(400, 300);
+                // Windows can briefly report an empty path while a slideshow image
+                // is being swapped. Do not replace a usable preview with null.
+                if (!string.IsNullOrWhiteSpace(newWallpaper))
+                {
+                    monitor.WallpaperPath = newWallpaper;
+                    await monitor.LoadWallpaperPreviewAsync(400, 300);
+                }
             }
 
             Trace.WriteLine($"[{DateTime.Now:O}] [MainViewModel] ReloadMonitorPreviewsAsync complete");

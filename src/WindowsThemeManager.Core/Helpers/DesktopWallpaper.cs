@@ -16,15 +16,16 @@ public interface IDesktopWallpaper
     void SetWallpaper([MarshalAs(UnmanagedType.LPWStr)] string? monitorID,
                       [MarshalAs(UnmanagedType.LPWStr)] string wallpaper);
 
-    [return: MarshalAs(UnmanagedType.LPWStr)]
-    string? GetWallpaper([MarshalAs(UnmanagedType.LPWStr)] string? monitorID);
+    int GetWallpaper([MarshalAs(UnmanagedType.LPWStr)] string? monitorID,
+                     [MarshalAs(UnmanagedType.LPWStr)] out string? wallpaper);
 
-    [return: MarshalAs(UnmanagedType.LPWStr)]
-    string GetMonitorDevicePathAt(uint monitorIndex);
+    int GetMonitorDevicePathAt(uint monitorIndex,
+                               [MarshalAs(UnmanagedType.LPWStr)] out string monitorID);
 
-    uint GetMonitorDevicePathCount();
+    int GetMonitorDevicePathCount(out uint count);
 
-    RECT GetMonitorRECT([MarshalAs(UnmanagedType.LPWStr)] string monitorID);
+    int GetMonitorRECT([MarshalAs(UnmanagedType.LPWStr)] string monitorID,
+                       [MarshalAs(UnmanagedType.Struct)] ref RECT displayRect);
 
     void SetBackgroundColor(uint color);
 

@@ -1,72 +1,33 @@
 # Windows Theme Manager
 
-A modern Windows desktop application for managing themes and monitor wallpapers with a visual, intuitive interface.
-
-## Overview
-
-Windows Theme Manager provides an enhanced theme management experience by:
-- Discovering themes from common Windows theme folders
-- Applying themes with a single click
-- Showing a visual monitor layout with live wallpaper previews
-- Opening a monitor wallpaper in the system default image viewer
-- Confirming deletions before moving a wallpaper to the Recycle Bin
+A Windows desktop application for browsing and applying Windows themes, viewing wallpapers across multiple monitors, and backing up desktop icon positions.
 
 ## Features
 
-- Discover and manage themes from multiple Windows theme directories
-- Visual representation of multi-monitor setups with current wallpapers
-- Click-to-apply theme selection
-- Click-to-open wallpaper files for quick viewing or editing
-- Red X delete action on each monitor preview with recycle-bin confirmation
-- Light/Dark/System theme selector in the status bar for app UI theming
-- Persistent settings for theme preference, window size, and panel width
-- Async startup so settings load without blocking the UI thread
-- Resizable monitor canvas with Viewbox scaling for accurate multi-monitor visualization
-- Native Windows integration
-- Real-time wallpaper updates through Windows COM events
-
-### Wallpaper Change Detection Requirement
-
-**CRITICAL**: The application uses the `IDesktopWallpaper` COM event stream to receive wallpaper change events from Windows.
-
-Polling is not used for wallpaper change detection. If the COM subscription fails, fix the COM event path instead of introducing timers, file watchers, or refresh loops.
-
-### Debugging Requirement
-
-- When a feature is stuck, add targeted debug prints or structured logs before continuing to guess at fixes.
-- Diagnostics should make it clear which stage is succeeding or failing, especially around COM hookup, callback delivery, UI refresh, image loading, and file launch/delete actions.
-- Remove or downgrade temporary diagnostics once the issue is resolved.
+- Discover `.theme` files from common Windows theme directories
+- Apply a theme with one click
+- Visualize the relative layout of connected monitors
+- Open a monitor's wallpaper in the default Windows image viewer
+- Move a wallpaper to the Recycle Bin after confirmation
+- Refresh wallpaper previews when Windows wallpaper state changes
+- Choose System, Light, or Dark colors for the application UI
+- Capture, save, load, restore, and delete desktop icon layout backups
 
 ## Tech Stack
 
-- Language: C#
-- Framework: .NET (WPF)
-- Platform: Windows 10/11
-
-## Project Structure
-
-```
-WindowsThemeManager/
-├── src/
-│   ├── WindowsThemeManager/
-│   ├── WindowsThemeManager.Core/
-│   └── WindowsThemeManager.Tests/
-├── README.md
-├── ARCHITECTURE.md
-├── CONTRIBUTING.md
-├── CHANGELOG.md
-└── IMPLEMENTATION_PLAN.md
-```
+- C# and WPF
+- .NET 10 (`net10.0-windows`)
+- Windows 10/11
 
 ## Getting Started
 
 ### Prerequisites
 
 - Windows 10/11
-- Visual Studio 2022 or later
-- .NET 8.0 SDK or later
+- .NET 10 SDK
+- Visual Studio 2022 or later, or VS Code with C# Dev Kit
 
-### Building the Project
+### Build and run
 
 ```bash
 dotnet restore
@@ -74,12 +35,31 @@ dotnet build
 dotnet run --project src/WindowsThemeManager
 ```
 
+For user-facing instructions, see the [User Guide](docs/USER_GUIDE.md). For development setup and conventions, see [Contributing](docs/CONTRIBUTING.md) and the mandatory [Coding Standards](CODING_STANDARDS.md).
+
+## Project Structure
+
+```
+WindowsThemeManager/
+├── src/
+│   ├── WindowsThemeManager/       # WPF application
+│   ├── WindowsThemeManager.Core/  # Models, services, and Windows interop
+│   └── WindowsThemeManager.Tests/ # Unit tests
+├── docs/                          # Project documentation
+├── README.md
+├── WindowsThemeManager.slnx
+└── windows-theme-manager.code-workspace
+```
+
 ## Documentation
 
-- [Architecture](ARCHITECTURE.md) - Technical design and system architecture
-- [Implementation Plan](IMPLEMENTATION_PLAN.md) - Completed roadmap and implementation notes
-- [Changelog](CHANGELOG.md) - User-facing changes by release
-- [Contributing](CONTRIBUTING.md) - Development guidelines
+- [User Guide](docs/USER_GUIDE.md) - Install, use, and manage themes, wallpapers, and icon layouts
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues, logs, and recovery steps
+- [Architecture](docs/ARCHITECTURE.md) - Technical design and system architecture
+- [Contributing](docs/CONTRIBUTING.md) - Development guidelines and testing expectations
+- [Coding Standards](CODING_STANDARDS.md) - Mandatory coding, architecture, testing, and agent guidelines
+- [Changelog](docs/CHANGELOG.md) - User-facing changes by release
+- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Completed roadmap and implementation record
 
 ## License
 

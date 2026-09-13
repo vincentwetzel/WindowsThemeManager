@@ -83,7 +83,12 @@ public class WallpaperImageService : IWallpaperImageService
 
         try
         {
-            var thumbnail = LoadImageFromFile(wallpaperPath, maxWidth);
+            // Keep the original decoded dimensions. Some valid Windows wallpaper
+            // formats fail when BitmapImage.DecodePixelWidth is applied (especially
+            // to transcoded/slideshow cache files). The WPF Image control performs
+            // the visual scaling via Stretch, so a reduced decode is not required
+            // for the monitor preview.
+            var thumbnail = LoadImageFromFile(wallpaperPath, decodePixelWidth: 0);
             _thumbnailCache[cacheKey] = thumbnail;
 
             _logger.LogDebug("Generated thumbnail: {Path} ({Width}x{Height})", wallpaperPath, maxWidth, maxHeight);

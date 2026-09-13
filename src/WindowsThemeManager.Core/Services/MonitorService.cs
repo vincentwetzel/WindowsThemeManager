@@ -2,7 +2,6 @@ using System.Drawing;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32;
 using WindowsThemeManager.Core.Extensions;
 using WindowsThemeManager.Core.Helpers;
 using WindowsThemeManager.Core.Models;
@@ -44,31 +43,53 @@ public class MonitorService : Interfaces.IMonitorService
         try
         {
             var desktopWallpaper = (IDesktopWallpaper)new DesktopWallpaperClass();
-            uint monitorCount = desktopWallpaper.GetMonitorDevicePathCount();
+            _ = desktopWallpaper.GetMonitorDevicePathCount(out uint monitorCount);
 
             _logger.LogInformation("IDesktopWallpaper reports {Count} monitors", monitorCount);
             Console.WriteLine($"[MonitorService] IDesktopWallpaper reports {monitorCount} monitors");
             System.Diagnostics.Debug.WriteLine($"[MonitorService] IDesktopWallpaper reports {monitorCount} monitors");
 
-            for (uint i = 0; i < monitorCount; i++)
+            // IDesktopWallpaper reliably supplies the monitor identity and its
+            // wallpaper, but GetMonitorRECT returns E_FAIL on some Windows builds.
+            // Screen.AllScreens provides the same virtual-screen geometry without
+            // losing the per-monitor wallpaper paths.
+            var screenMonitors = System.Windows.Forms.Screen.AllScreens;
+            if (screenMonitors.Length != monitorCount)
+            {
+                _logger.LogWarning(
+                    "Monitor count mismatch: wallpaper API={WallpaperCount}, screen API={ScreenCount}; using visible screen count",
+                    monitorCount, screenMonitors.Length);
+            }
+
+            // The wallpaper API can include an extra shell/virtual entry. Only
+            // create tiles for visible screens, while retaining the per-monitor
+            // wallpaper identity from the matching API entry.
+            int visibleMonitorCount = Math.Min((int)monitorCount, screenMonitors.Length);
+            var settingsOrderedScreens = GetSettingsOrderedScreens(screenMonitors);
+            for (int i = 0; i < visibleMonitorCount; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                string devicePath = desktopWallpaper.GetMonitorDevicePathAt(i);
-                string? wallpaperPath = desktopWallpaper.GetWallpaper(devicePath);
+                _ = desktopWallpaper.GetMonitorDevicePathAt((uint)i, out string devicePath);
+                _ = desktopWallpaper.GetWallpaper(devicePath, out string? wallpaperPath);
 
-                // Get monitor bounds from COM interface
-                RECT rect = desktopWallpaper.GetMonitorRECT(devicePath);
-                var bounds = new WindowsThemeManager.Core.Models.IntRect(
-                    rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+                // Keep the stable pairing between the wallpaper API's entries and
+                // the visible screen enumeration. Do not invoke the experimental
+                // DisplayConfig interop here; malformed native layouts can corrupt
+                // the process heap.
+                // IDesktopWallpaper enumerates wallpaper entries in Windows
+                // Display Settings order: 1 (primary), 2 (left), 3 (right),
+                // followed by the display above the primary in this layout.
+                var screen = settingsOrderedScreens[i];
+                var bounds = screen.Bounds.ToIntRect();
 
                 var monitor = new MonitorInfo
                 {
                     DeviceName = devicePath,
-                    MonitorNumber = (int)i + 1,
+                    MonitorNumber = i + 1,
                     Bounds = bounds,
-                    WorkingArea = bounds,
-                    IsPrimary = (i == 0), // First monitor is typically primary
+                    WorkingArea = screen.WorkingArea.ToIntRect(),
+                    IsPrimary = screen.Primary,
                     CurrentWallpaperPath = string.IsNullOrEmpty(wallpaperPath) ? null : wallpaperPath,
                 };
 
@@ -84,9 +105,15 @@ public class MonitorService : Interfaces.IMonitorService
         {
             _logger.LogWarning(ex, "Failed to get monitors via IDesktopWallpaper, falling back to Screen.AllScreens");
 
-            // Fallback to Screen.AllScreens - uses system-wide wallpaper for all monitors
+            // The COM loop may have populated some monitors before a later query
+            // failed. Discard those partial results before adding fallback screens.
+            monitors.Clear();
+
+            // Fallback to Screen.AllScreens for geometry only.  The registry value is
+            // system-wide and is not safe to use as a per-monitor wallpaper path:
+            // when Windows has different wallpapers (or a slideshow) it can point to
+            // one shared/transcoded image and would make every preview identical.
             var allMonitors = System.Windows.Forms.Screen.AllScreens;
-            var systemWallpaper = GetCurrentWallpaperPath();
             int monitorIndex = 0;
 
             foreach (var screen in allMonitors)
@@ -100,7 +127,7 @@ public class MonitorService : Interfaces.IMonitorService
                     Bounds = screen.Bounds.ToIntRect(),
                     WorkingArea = screen.WorkingArea.ToIntRect(),
                     IsPrimary = screen.Primary,
-                    CurrentWallpaperPath = systemWallpaper, // Use system-wide wallpaper as fallback
+                    CurrentWallpaperPath = null,
                 };
 
                 monitors.Add(monitor);
@@ -133,31 +160,17 @@ public class MonitorService : Interfaces.IMonitorService
         try
         {
             var desktopWallpaper = (IDesktopWallpaper)new DesktopWallpaperClass();
-            var devicePath = desktopWallpaper.GetMonitorDevicePathAt((uint)monitorIndex);
-            var wallpaper = desktopWallpaper.GetWallpaper(devicePath);
-            return string.IsNullOrEmpty(wallpaper) ? GetCurrentWallpaperPath() : wallpaper;
+            _ = desktopWallpaper.GetMonitorDevicePathAt((uint)monitorIndex, out string devicePath);
+            _ = desktopWallpaper.GetWallpaper(devicePath, out string? wallpaper);
+            // Do not fall back to Control Panel\Desktop\WallPaper here. That value
+            // represents a shared desktop wallpaper and cannot identify this monitor.
+            return string.IsNullOrEmpty(wallpaper) ? null : wallpaper;
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to get monitor wallpaper at index {Index}", monitorIndex);
             Console.WriteLine($"[MonitorService] Failed to get monitor wallpaper at index {monitorIndex}: {ex.Message}");
             System.Diagnostics.Debug.WriteLine($"[MonitorService] Failed to get monitor wallpaper at index {monitorIndex}: {ex.Message}");
-            return GetCurrentWallpaperPath();
-        }
-    }
-
-    /// <summary>
-    /// Gets the system-wide current wallpaper from registry.
-    /// </summary>
-    private static string? GetCurrentWallpaperPath()
-    {
-        try
-        {
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop");
-            return key?.GetValue("WallPaper") as string;
-        }
-        catch
-        {
             return null;
         }
     }
@@ -251,7 +264,7 @@ public class MonitorService : Interfaces.IMonitorService
         try
         {
             var desktopWallpaper = (IDesktopWallpaper)new DesktopWallpaperClass();
-            uint monitorCount = desktopWallpaper.GetMonitorDevicePathCount();
+            _ = desktopWallpaper.GetMonitorDevicePathCount(out uint monitorCount);
 
             lock (_cachedWallpapers)
             {
@@ -259,8 +272,8 @@ public class MonitorService : Interfaces.IMonitorService
 
                 for (uint i = 0; i < monitorCount; i++)
                 {
-                    string devicePath = desktopWallpaper.GetMonitorDevicePathAt(i);
-                    string? wallpaperPath = desktopWallpaper.GetWallpaper(devicePath);
+                    _ = desktopWallpaper.GetMonitorDevicePathAt(i, out string devicePath);
+                    _ = desktopWallpaper.GetWallpaper(devicePath, out string? wallpaperPath);
                     _cachedWallpapers[devicePath] = string.IsNullOrEmpty(wallpaperPath) ? null : wallpaperPath;
                 }
             }
@@ -288,7 +301,7 @@ public class MonitorService : Interfaces.IMonitorService
         try
         {
             var desktopWallpaper = (IDesktopWallpaper)new DesktopWallpaperClass();
-            uint monitorCount = desktopWallpaper.GetMonitorDevicePathCount();
+            _ = desktopWallpaper.GetMonitorDevicePathCount(out uint monitorCount);
 
             List<string> changedMonitors = new();
 
@@ -296,8 +309,8 @@ public class MonitorService : Interfaces.IMonitorService
             {
                 for (uint i = 0; i < monitorCount; i++)
                 {
-                    string devicePath = desktopWallpaper.GetMonitorDevicePathAt(i);
-                    string? currentWallpaper = desktopWallpaper.GetWallpaper(devicePath);
+                    _ = desktopWallpaper.GetMonitorDevicePathAt(i, out string devicePath);
+                    _ = desktopWallpaper.GetWallpaper(devicePath, out string? currentWallpaper);
                     currentWallpaper = string.IsNullOrEmpty(currentWallpaper) ? null : currentWallpaper;
 
                     if (_cachedWallpapers.TryGetValue(devicePath, out string? cachedWallpaper))
@@ -330,7 +343,7 @@ public class MonitorService : Interfaces.IMonitorService
                 // Check for removed monitors
                 var removedDevices = _cachedWallpapers.Keys
                     .Where(k => !Enumerable.Range(0, (int)monitorCount)
-                        .Select(i => desktopWallpaper.GetMonitorDevicePathAt((uint)i))
+                        .Select(i => GetMonitorDevicePath(desktopWallpaper, (uint)i))
                         .Contains(k))
                     .ToList();
 
@@ -366,6 +379,291 @@ public class MonitorService : Interfaces.IMonitorService
             System.Diagnostics.Debug.WriteLine($"[MonitorService] Failed to check for wallpaper changes: {ex.Message}");
             Trace.WriteLine($"[{DateTime.Now:O}] [MonitorService] Wallpaper check failed: {ex.Message}");
         }
+    }
+
+    private static string GetMonitorDevicePath(IDesktopWallpaper desktopWallpaper, uint index)
+    {
+        _ = desktopWallpaper.GetMonitorDevicePathAt(index, out string devicePath);
+        return devicePath;
+    }
+
+    /// <summary>
+    /// Matches the shell monitor path to the physical screen. The COM path uses
+    /// identifiers such as DISPLAY#ACI249A#... while EnumDisplayDevices exposes
+    /// the same hardware identity as MONITOR\ACI249A\....
+    /// </summary>
+    private static DisplayConfigMonitor? FindScreenForMonitor(
+        string monitorPath,
+        System.Windows.Forms.Screen[] screens)
+    {
+        var displayMap = GetDisplayConfigMap(screens);
+        return displayMap.TryGetValue(monitorPath, out var screen) ? screen : null;
+    }
+
+    private static string NormalizeMonitorId(string? deviceId)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId))
+            return string.Empty;
+
+        return deviceId.Trim();
+    }
+
+    private static int GetWindowsDisplayNumber(
+        System.Windows.Forms.Screen screen,
+        int fallbackNumber)
+    {
+        var name = screen.DeviceName;
+        const string prefix = "DISPLAY";
+        var marker = name.LastIndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+
+        return marker >= 0 && int.TryParse(name[(marker + prefix.Length)..], out var number)
+            ? number
+            : fallbackNumber;
+    }
+
+    private static System.Windows.Forms.Screen[] GetSettingsOrderedScreens(
+        System.Windows.Forms.Screen[] screens)
+    {
+        var primary = screens.FirstOrDefault(s => s.Primary);
+        if (primary == null)
+            return screens;
+
+        var remaining = screens.Where(s => !ReferenceEquals(s, primary)).ToList();
+        var ordered = new List<System.Windows.Forms.Screen> { primary };
+
+        AddFirst(remaining.Where(s => s.Bounds.Right <= primary.Bounds.Left)
+            .OrderByDescending(s => s.Bounds.X));
+        AddFirst(remaining.Where(s => s.Bounds.Left >= primary.Bounds.Right)
+            .OrderBy(s => s.Bounds.X));
+        AddFirst(remaining.Where(s => s.Bounds.Bottom <= primary.Bounds.Top)
+            .OrderByDescending(s => s.Bounds.Y));
+
+        ordered.AddRange(remaining.OrderBy(s => s.Bounds.Y).ThenBy(s => s.Bounds.X));
+        return ordered.ToArray();
+
+        void AddFirst(IEnumerable<System.Windows.Forms.Screen> candidates)
+        {
+            var screen = candidates.FirstOrDefault(s => remaining.Contains(s));
+            if (screen != null)
+            {
+                ordered.Add(screen);
+                remaining.Remove(screen);
+            }
+        }
+    }
+
+    private static Dictionary<string, DisplayConfigMonitor> GetDisplayConfigMap(
+        System.Windows.Forms.Screen[] screens)
+    {
+        var result = new Dictionary<string, DisplayConfigMonitor>(StringComparer.OrdinalIgnoreCase);
+        uint pathCount = 0;
+        uint modeCount = 0;
+
+        if (GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, out pathCount, out modeCount) != 0)
+            return result;
+
+        var pathSize = Marshal.SizeOf<DISPLAYCONFIG_PATH_INFO>();
+        var modeSize = Marshal.SizeOf<DISPLAYCONFIG_MODE_INFO>();
+        var pathBuffer = Marshal.AllocHGlobal(checked((int)pathCount * pathSize));
+        var modeBuffer = Marshal.AllocHGlobal(checked((int)modeCount * modeSize));
+
+        try
+        {
+            var requestedPathCount = pathCount;
+            var requestedModeCount = modeCount;
+            if (QueryDisplayConfig(
+                    QDC_ONLY_ACTIVE_PATHS,
+                    ref requestedPathCount,
+                    pathBuffer,
+                    ref requestedModeCount,
+                    modeBuffer,
+                    IntPtr.Zero) != 0)
+            {
+                return result;
+            }
+
+            var displayNumber = 0;
+            for (var i = 0; i < requestedPathCount; i++)
+            {
+                var path = Marshal.PtrToStructure<DISPLAYCONFIG_PATH_INFO>(
+                    IntPtr.Add(pathBuffer, checked((int)i * pathSize)));
+
+                var source = new DISPLAYCONFIG_SOURCE_DEVICE_NAME
+                {
+                    header = CreateDeviceInfoHeader(
+                        DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME,
+                        Marshal.SizeOf<DISPLAYCONFIG_SOURCE_DEVICE_NAME>(),
+                        path.sourceInfo.adapterId,
+                        path.sourceInfo.id)
+                };
+                var target = new DISPLAYCONFIG_TARGET_DEVICE_NAME
+                {
+                    header = CreateDeviceInfoHeader(
+                        DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME,
+                        Marshal.SizeOf<DISPLAYCONFIG_TARGET_DEVICE_NAME>(),
+                        path.targetInfo.adapterId,
+                        path.targetInfo.id)
+                };
+
+                if (DisplayConfigGetDeviceInfo(ref source) != 0 ||
+                    DisplayConfigGetDeviceInfo(ref target) != 0)
+                {
+                    continue;
+                }
+
+                var screen = screens.FirstOrDefault(s =>
+                    string.Equals(s.DeviceName, source.viewGdiDeviceName,
+                        StringComparison.OrdinalIgnoreCase));
+                if (screen != null && !string.IsNullOrWhiteSpace(target.monitorDevicePath))
+                {
+                    // QueryDisplayConfig's active-path order is the order used
+                    // by Windows Display Settings for its monitor numbers.
+                    displayNumber++;
+                    result[target.monitorDevicePath] = new DisplayConfigMonitor(
+                        screen, displayNumber);
+                }
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(pathBuffer);
+            Marshal.FreeHGlobal(modeBuffer);
+        }
+
+        return result;
+    }
+
+    private sealed record DisplayConfigMonitor(
+        System.Windows.Forms.Screen Screen,
+        int Number);
+
+    private static DISPLAYCONFIG_DEVICE_INFO_HEADER CreateDeviceInfoHeader(
+        uint type,
+        int size,
+        LUID adapterId,
+        uint id) => new()
+        {
+            type = type,
+            size = (uint)size,
+            adapterId = adapterId,
+            id = id
+        };
+
+    private const uint QDC_ONLY_ACTIVE_PATHS = 0x00000002;
+    private const uint DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME = 1;
+    private const uint DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME = 2;
+
+    [DllImport("user32.dll")]
+    private static extern int GetDisplayConfigBufferSizes(
+        uint flags,
+        out uint numPathArrayElements,
+        out uint numModeInfoArrayElements);
+
+    [DllImport("user32.dll")]
+    private static extern int QueryDisplayConfig(
+        uint flags,
+        ref uint numPathArrayElements,
+        IntPtr pathInfoArray,
+        ref uint numModeInfoArrayElements,
+        IntPtr modeInfoArray,
+        IntPtr currentTopologyId);
+
+    [DllImport("user32.dll")]
+    private static extern int DisplayConfigGetDeviceInfo(
+        ref DISPLAYCONFIG_SOURCE_DEVICE_NAME requestPacket);
+
+    [DllImport("user32.dll")]
+    private static extern int DisplayConfigGetDeviceInfo(
+        ref DISPLAYCONFIG_TARGET_DEVICE_NAME requestPacket);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LUID
+    {
+        public uint lowPart;
+        public int highPart;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_DEVICE_INFO_HEADER
+    {
+        public uint type;
+        public uint size;
+        public LUID adapterId;
+        public uint id;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_SOURCE_INFO
+    {
+        public LUID adapterId;
+        public uint id;
+        public uint modeInfoIdx;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_RATIONAL
+    {
+        public uint numerator;
+        public uint denominator;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_TARGET_INFO
+    {
+        public LUID adapterId;
+        public uint id;
+        public uint modeInfoIdx;
+        public uint outputTechnology;
+        public uint rotation;
+        public uint scaling;
+        public DISPLAYCONFIG_RATIONAL refreshRate;
+        public uint scanLineOrdering;
+        public int targetAvailable;
+        public uint statusFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_PATH_INFO
+    {
+        public DISPLAYCONFIG_SOURCE_INFO sourceInfo;
+        public DISPLAYCONFIG_TARGET_INFO targetInfo;
+        public uint flags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_MODE_INFO
+    {
+        public uint infoType;
+        public uint id;
+        public LUID adapterId;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
+        public byte[] modeInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct DISPLAYCONFIG_SOURCE_DEVICE_NAME
+    {
+        public DISPLAYCONFIG_DEVICE_INFO_HEADER header;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string viewGdiDeviceName;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct DISPLAYCONFIG_TARGET_DEVICE_NAME
+    {
+        public DISPLAYCONFIG_DEVICE_INFO_HEADER header;
+        public uint flags;
+        public uint outputTechnology;
+        public ushort edidManufactureId;
+        public ushort edidProductCodeId;
+        public uint connectorInstance;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string monitorFriendlyDeviceName;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string monitorDevicePath;
     }
 
     /// <summary>
