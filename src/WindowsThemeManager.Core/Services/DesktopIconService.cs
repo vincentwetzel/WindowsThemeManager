@@ -13,6 +13,12 @@ namespace WindowsThemeManager.Core.Services;
 /// </summary>
 public class DesktopIconService : IDesktopIconService
 {
+    private static readonly JsonSerializerOptions LayoutJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true
+    };
+
     // Win32 constants
     private const int LVM_FIRST = 0x1000;
     private const int LVM_GETITEMCOUNT = LVM_FIRST + 4;
@@ -54,7 +60,6 @@ public class DesktopIconService : IDesktopIconService
     public async Task<DesktopIconLayout> CaptureLayoutAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Capturing desktop icon layout");
-        Console.WriteLine("[DesktopIconService] Capturing desktop icon layout");
 
         var icons = await Task.Run(() =>
         {
@@ -65,7 +70,6 @@ public class DesktopIconService : IDesktopIconService
             if (desktopHandle == IntPtr.Zero)
             {
                 _logger.LogError("Failed to get desktop ListView handle");
-                Console.WriteLine("[DesktopIconService] ERROR: Failed to get desktop ListView handle");
                 return iconList;
             }
 
@@ -79,7 +83,6 @@ public class DesktopIconService : IDesktopIconService
             if (processHandle == IntPtr.Zero)
             {
                 _logger.LogError("Failed to open Explorer process. Insufficient permissions?");
-                Console.WriteLine("[DesktopIconService] ERROR: Failed to open Explorer process");
                 return iconList;
             }
 
@@ -88,10 +91,6 @@ public class DesktopIconService : IDesktopIconService
                 // Get item count
                 int itemCount = (int)SendMessage(desktopHandle, LVM_GETITEMCOUNT, IntPtr.Zero, IntPtr.Zero);
                 _logger.LogInformation("Found {ItemCount} desktop icons", itemCount);
-
-                // Get DPI scale for coordinate normalization
-                int dpiScale = GetDpiScale();
-                var resolution = GetPrimaryMonitorResolution();
 
                 // Allocate memory in Explorer process
                 var pointSize = Marshal.SizeOf(typeof(POINT32));
@@ -110,7 +109,7 @@ public class DesktopIconService : IDesktopIconService
                         cancellationToken.ThrowIfCancellationRequested();
 
                         // Get icon name
-                        var itemName = GetItemName(desktopHandle, processHandle, remoteMemory, i);
+                        var itemName = GetItemName(desktopHandle, processHandle, i);
                         
                         // Get icon position
                         bool success = SendMessage(desktopHandle, LVM_GETITEMPOSITION, (IntPtr)i, remoteMemory) != IntPtr.Zero;
@@ -131,7 +130,6 @@ public class DesktopIconService : IDesktopIconService
                                         Name = itemName,
                                         X = point.X,
                                         Y = point.Y,
-                                        IsVisible = true
                                     });
                                 }
                             }
@@ -166,7 +164,6 @@ public class DesktopIconService : IDesktopIconService
 
         _logger.LogInformation("Captured layout with {IconCount} icons at {Resolution}, {DpiScale}% DPI", 
             icons.Count, layout.DisplayResolution, layout.DpiScale);
-        Console.WriteLine($"[DesktopIconService] Captured {icons.Count} icons");
 
         return layout;
     }
@@ -175,7 +172,6 @@ public class DesktopIconService : IDesktopIconService
     public async Task<bool> RestoreLayoutAsync(DesktopIconLayout layout, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Restoring desktop icon layout with {IconCount} icons", layout.Icons.Count);
-        Console.WriteLine($"[DesktopIconService] Restoring layout with {layout.Icons.Count} icons");
 
         return await Task.Run(() =>
         {
@@ -215,13 +211,11 @@ public class DesktopIconService : IDesktopIconService
                 SendMessage(desktopHandle, 0x001B, IntPtr.Zero, IntPtr.Zero); // WM_KEYUP to refresh
 
                 _logger.LogInformation("Successfully restored {Count} icon positions", layout.Icons.Count);
-                Console.WriteLine($"[DesktopIconService] Restored {layout.Icons.Count} icon positions");
                 return true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error restoring desktop icon layout");
-                Console.WriteLine($"[DesktopIconService] ERROR: {ex.Message}");
                 return false;
             }
         }, cancellationToken);
@@ -233,13 +227,7 @@ public class DesktopIconService : IDesktopIconService
         var path = filePath ?? Path.Combine(_layoutsDirectory, $"{layout.LayoutName}.json");
         
         _logger.LogInformation("Saving layout to {Path}", path);
-        Console.WriteLine($"[DesktopIconService] Saving layout to {path}");
-
-        var json = JsonSerializer.Serialize(layout, new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        });
+        var json = JsonSerializer.Serialize(layout, LayoutJsonOptions);
 
         await File.WriteAllTextAsync(path, json, cancellationToken);
         
@@ -251,13 +239,8 @@ public class DesktopIconService : IDesktopIconService
     public async Task<DesktopIconLayout> LoadLayoutFromFileAsync(string filePath, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Loading layout from {Path}", filePath);
-        Console.WriteLine($"[DesktopIconService] Loading layout from {filePath}");
-
         var json = await File.ReadAllTextAsync(filePath, cancellationToken);
-        var layout = JsonSerializer.Deserialize<DesktopIconLayout>(json, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        });
+        var layout = JsonSerializer.Deserialize<DesktopIconLayout>(json, LayoutJsonOptions);
 
         if (layout == null)
         {
@@ -310,7 +293,7 @@ public class DesktopIconService : IDesktopIconService
         return IntPtr.Zero;
     }
 
-    private string GetItemName(IntPtr listViewHandle, IntPtr processHandle, IntPtr remoteMemory, int itemIndex)
+    private string GetItemName(IntPtr listViewHandle, IntPtr processHandle, int itemIndex)
     {
         const int maxNameLength = 260;
         var lvItemSize = Marshal.SizeOf(typeof(LVITEM));
@@ -390,21 +373,13 @@ public class DesktopIconService : IDesktopIconService
         
         for (int i = 0; i < itemCount; i++)
         {
-            var itemName = GetItemNameSimple(listViewHandle, i);
-            if (itemName.Equals(name, StringComparison.OrdinalIgnoreCase))
+            if ($"Icon_{i}".Equals(name, StringComparison.OrdinalIgnoreCase))
             {
                 return i;
             }
         }
         
         return -1;
-    }
-
-    private string GetItemNameSimple(IntPtr listViewHandle, int itemIndex)
-    {
-        // Simplified version - may not work in all cases
-        // This is a fallback if the full method fails
-        return $"Icon_{itemIndex}";
     }
 
     private int GetDpiScale()

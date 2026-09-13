@@ -15,13 +15,4 @@ public class MonitorLayout
     /// </summary>
     public IntRect TotalBounds { get; set; }
 
-    /// <summary>
-    /// Returns true if there is more than one monitor.
-    /// </summary>
-    public bool IsMultiMonitor => Monitors.Count > 1;
-
-    /// <summary>
-    /// Gets the primary monitor.
-    /// </summary>
-    public MonitorInfo? PrimaryMonitor => Monitors.FirstOrDefault(m => m.IsPrimary);
 }

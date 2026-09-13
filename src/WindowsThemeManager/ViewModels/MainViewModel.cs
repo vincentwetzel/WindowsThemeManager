@@ -20,7 +20,6 @@ public partial class MainViewModel : ObservableObject
     private readonly IThemeService _themeService;
     private readonly IMonitorService _monitorService;
     private readonly IWallpaperImageService _imageService;
-    private readonly SettingsService _settings;
     private readonly IDialogService _dialogService;
     private readonly ILogger<MainViewModel> _logger;
     private readonly object _wallpaperRefreshGate = new();
@@ -68,7 +67,6 @@ public partial class MainViewModel : ObservableObject
         _themeService = themeService;
         _monitorService = monitorService;
         _imageService = imageService;
-        _settings = settings;
         _dialogService = dialogService;
         _logger = logger;
         DesktopIcon = desktopIconViewModel;
@@ -104,27 +102,20 @@ public partial class MainViewModel : ObservableObject
             var themes = await themesTask;
             var layout = await layoutTask;
 
-            // Update themes collection
-            Application.Current.Dispatcher.Invoke(() =>
+            // Update themes collection on the UI context resumed by the await.
+            Themes.Clear();
+            foreach (var theme in themes)
             {
-                Themes.Clear();
-                foreach (var theme in themes)
-                {
-                    var vm = new ThemeItemViewModel(theme, _themeService);
-                    Themes.Add(vm);
-                }
-            });
+                var vm = new ThemeItemViewModel(theme, _themeService);
+                Themes.Add(vm);
+            }
 
-            // Update monitors collection
-            Application.Current.Dispatcher.Invoke(() =>
+            Monitors.Clear();
+            foreach (var monitor in layout.Monitors)
             {
-                Monitors.Clear();
-                foreach (var monitor in layout.Monitors)
-                {
-                    var vm = new MonitorItemViewModel(monitor, _imageService, _dialogService);
-                    Monitors.Add(vm);
-                }
-            });
+                var vm = new MonitorItemViewModel(monitor, _imageService, _dialogService);
+                Monitors.Add(vm);
+            }
 
             // Calculate monitor layout positions
             CalculateMonitorPositions(layout);
@@ -147,15 +138,11 @@ public partial class MainViewModel : ObservableObject
             StatusMessage = $"Loaded {Themes.Count} themes, {Monitors.Count} monitor(s)";
             _logger.LogInformation("Loaded {ThemeCount} themes and {MonitorCount} monitors",
                 Themes.Count, Monitors.Count);
-            Console.WriteLine($"[MainViewModel] Loaded {Themes.Count} themes and {Monitors.Count} monitors");
-            System.Diagnostics.Debug.WriteLine($"[MainViewModel] Loaded {Themes.Count} themes and {Monitors.Count} monitors");
         }
         catch (Exception ex)
         {
             StatusMessage = $"Error loading: {ex.Message}";
             _logger.LogError(ex, "Failed to load themes and monitors");
-            Console.WriteLine($"[MainViewModel] Failed to load themes and monitors: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"[MainViewModel] Failed to load themes and monitors: {ex.Message}");
             _dialogService.ShowError(
                 $"Failed to load themes and monitors.\n\nDetails: {ex.Message}\n\nCheck the debug output for more information.",
                 "Load Error");
@@ -172,7 +159,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public async Task RefreshAsync()
     {
-        await _themeService.RefreshThemesAsync();
+        _themeService.RefreshThemes();
         await LoadAsync();
     }
 
@@ -211,7 +198,7 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     private async Task LoadMonitorPreviewsAsync()
     {
-        var tasks = Monitors.Select(m => m.LoadWallpaperPreviewAsync(400, 300));
+        var tasks = Monitors.Select(m => m.LoadWallpaperPreviewAsync());
         await Task.WhenAll(tasks);
     }
 
@@ -241,7 +228,6 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     private async void OnWallpaperChanged(object? sender, (string DevicePath, string? WallpaperPath) e)
     {
-        System.Diagnostics.Debug.WriteLine($"[MainViewModel] Received wallpaper change event - DevicePath: {e.DevicePath}, WallpaperPath: {e.WallpaperPath ?? "(null)"}");
         Trace.WriteLine($"[{DateTime.Now:O}] [MainViewModel] OnWallpaperChanged device={e.DevicePath} wallpaper={e.WallpaperPath ?? "(null)"}");
 
         CancellationTokenSource cts;
@@ -283,7 +269,7 @@ public partial class MainViewModel : ObservableObject
             if (monitor != null && !string.IsNullOrWhiteSpace(e.WallpaperPath))
             {
                 monitor.WallpaperPath = e.WallpaperPath;
-                await monitor.LoadWallpaperPreviewAsync(400, 300);
+                await monitor.LoadWallpaperPreviewAsync();
             }
 
             Trace.WriteLine($"[{DateTime.Now:O}] [MainViewModel] Dispatcher refresh completed");
@@ -325,7 +311,7 @@ public partial class MainViewModel : ObservableObject
                 if (!string.IsNullOrWhiteSpace(newWallpaper))
                 {
                     monitor.WallpaperPath = newWallpaper;
-                    await monitor.LoadWallpaperPreviewAsync(400, 300);
+                    await monitor.LoadWallpaperPreviewAsync();
                 }
             }
 

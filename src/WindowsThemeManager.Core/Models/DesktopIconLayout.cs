@@ -19,11 +19,6 @@ public record DesktopIconPosition
     /// Y coordinate in physical pixels.
     /// </summary>
     public int Y { get; init; }
-
-    /// <summary>
-    /// Whether the icon is visible.
-    /// </summary>
-    public bool IsVisible { get; init; } = true;
 }
 
 /// <summary>

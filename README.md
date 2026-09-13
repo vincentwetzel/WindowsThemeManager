@@ -5,13 +5,16 @@ A Windows desktop application for browsing and applying Windows themes, viewing 
 ## Features
 
 - Discover `.theme` files from common Windows theme directories
-- Apply a theme with one click
+- Apply a valid `.theme` file with one click through Windows
 - Visualize the relative layout of connected monitors
 - Open a monitor's wallpaper in the default Windows image viewer
 - Move a wallpaper to the Recycle Bin after confirmation
 - Refresh wallpaper previews when Windows wallpaper state changes
 - Choose System, Light, or Dark colors for the application UI
 - Capture, save, load, restore, and delete desktop icon layout backups
+
+Theme discovery reads the display name and wallpaper metadata from `.theme` files;
+Windows applies the complete theme file, including any components it supports.
 
 ## Tech Stack
 

@@ -18,15 +18,17 @@ The UI follows MVVM. View models coordinate user actions while services own them
 
 ### Theme discovery and application
 
-`ThemeDirectoryScanner` searches the standard Windows theme locations and their immediate subdirectories. `ThemeFileParser` converts theme files into application models, and `ThemeService` caches discovered themes for five minutes, sorts them by display name, and coordinates application through `ThemeApplier`.
+`ThemeDirectoryScanner` synchronously searches the standard Windows theme locations and their immediate subdirectories for `.theme` files. `ThemeFileParser` reads the display name and wallpaper metadata needed by the UI. `ThemeService` caches discovered themes for five minutes, sorts them by display name, validates the selected theme file, and coordinates application through `ThemeApplier`.
+
+`ThemeApplier` delegates complete-theme application to the Windows shell through the native theme helper. It broadcasts a settings change and waits briefly for Windows to process the update. There is no separate application path for individual visual styles, cursors, sounds, or wallpapers.
 
 ### Monitor and wallpaper management
 
-`MonitorService` uses `IDesktopWallpaper` to enumerate monitor device paths, bounds, primary status, and per-monitor wallpaper paths. It matches the shell's monitor device paths to physical screens through Windows display configuration APIs so monitor numbers and wallpaper paths remain associated with the correct display when enumeration order changes. `MainViewModel` normalizes those bounds onto an 800 × 600 canvas hosted by a WPF `Viewbox`.
+`MonitorService` uses `IDesktopWallpaper` to enumerate monitor device paths and per-monitor wallpaper paths, and `Screen.AllScreens` to provide bounds and primary status. It preserves the ordering reported by Windows so monitor numbers and wallpaper paths remain associated with the same display. `MainViewModel` normalizes those bounds onto an 800 × 600 canvas hosted by a WPF `Viewbox`.
 
 Wallpaper state is currently detected by querying `IDesktopWallpaper` on a background polling loop and comparing results with an in-memory cache. The current interval is two seconds. When a change is found, the view model clears image caches and refreshes the affected monitor by device path. A transient empty path reported while Windows swaps a slideshow image does not overwrite a usable path or preview; a later non-empty result completes the update.
 
-The codebase also contains COM callback and WinEvent interop declarations reserved for event-driven detection, but those hooks are not the active change-notification path today.
+Wallpaper change notifications use the polling path exclusively; no second event-driven detection mechanism is registered.
 
 ### Wallpaper actions
 
@@ -40,7 +42,7 @@ The codebase also contains COM callback and WinEvent interop declarations reserv
 
 ### Settings and diagnostics
 
-Settings are serialized as JSON under `%LocalAppData%\WindowsThemeManager\settings.json`. Startup diagnostics are written to `%LocalAppData%\WindowsThemeManager\Logs`; the application keeps the ten most recent debug logs.
+The supported settings are window dimensions, maximized state, theme panel width, and application color mode. They are serialized as JSON under `%LocalAppData%\WindowsThemeManager\settings.json`. Startup diagnostics are written to `%LocalAppData%\WindowsThemeManager\Logs`; the application keeps the ten most recent debug logs.
 
 ## Data flow
 

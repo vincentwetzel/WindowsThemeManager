@@ -1,5 +1,3 @@
-using System.Windows;
-
 namespace WindowsThemeManager.Services;
 
 /// <summary>

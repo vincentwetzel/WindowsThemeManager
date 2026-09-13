@@ -27,6 +27,8 @@ dotnet run --project src/WindowsThemeManager
 ## Architecture and wallpaper detection
 
 - Follow the MVVM and service boundaries described in [Architecture](ARCHITECTURE.md).
+- Theme discovery scans only the four standard Windows theme locations and their immediate child directories for `.theme` files. Keep parsing limited to metadata the UI or theme workflow consumes.
+- Theme application is delegated to Windows through the complete `.theme` file. Do not add parallel per-component application paths unless the architecture, tests, and user documentation are updated together.
 - The current wallpaper-change implementation polls `IDesktopWallpaper` every two seconds. Keep one authoritative detection path; do not add a second timer, file watcher, or registry loop without updating the architecture and tests.
 - Changes to monitor refresh, COM interop, or Windows shell integration should include targeted diagnostics and manual verification.
 
@@ -43,6 +45,8 @@ dotnet test
 ```
 
 Add or update tests for behavior changes when practical. Manually verify monitor interactions, wallpaper open/delete behavior, theme application, and desktop icon restoration when those areas change.
+
+The unit-test project covers core parsing, scanning, settings, layout, and service coordination. Platform-dependent COM, shell, Explorer, and WPF behavior still requires Windows manual verification.
 
 ## Documentation
 

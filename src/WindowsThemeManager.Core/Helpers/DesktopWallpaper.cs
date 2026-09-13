@@ -53,117 +53,11 @@ public interface IDesktopWallpaper
 }
 
 /// <summary>
-/// COM interface for IConnectionPointContainer.
-/// CLSID: {C2CF3110-460E-4fc1-B9D0-8A1C0C9CC4BD}
-/// IID: {B196B284-BAB4-101A-B69C-00AA00341D07} (Standard COM IConnectionPointContainer)
-/// </summary>
-[ComImport]
-[Guid("B196B284-BAB4-101A-B69C-00AA00341D07")]
-[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-public interface IConnectionPointContainer
-{
-    void EnumConnectionPoints(out IEnumConnectionPoints ppEnum);
-
-    [PreserveSig]
-    int FindConnectionPoint(ref Guid riid, out IConnectionPoint ppCP);
-}
-
-/// <summary>
-/// COM interface for enumerating connection points.
-/// IID: {B196B285-BAB4-101A-B69C-00AA00341D07}
-/// </summary>
-[ComImport]
-[Guid("B196B285-BAB4-101A-B69C-00AA00341D07")]
-[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-public interface IEnumConnectionPoints
-{
-    [PreserveSig]
-    int Next(
-        int cConnections,
-        [MarshalAs(UnmanagedType.Interface)] out IConnectionPoint ppCP,
-        out int pcFetched);
-
-    [PreserveSig]
-    int Skip(int cConnections);
-
-    [PreserveSig]
-    int Reset();
-
-    void Clone(out IEnumConnectionPoints ppEnum);
-}
-
-/// <summary>
-/// COM interface for IConnectionPoint.
-/// CLSID: {C2CF3110-460E-4fc1-B9D0-8A1C0C9CC4BD}
-/// IID: {B196B286-BAB4-101A-B69C-00AA00341D07} (Standard COM IConnectionPoint)
-/// </summary>
-[ComImport]
-[Guid("B196B286-BAB4-101A-B69C-00AA00341D07")]
-[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-public interface IConnectionPoint
-{
-    void GetConnectionInterface(out Guid pIID);
-    void GetConnectionPointContainer(out IConnectionPointContainer ppCPC);
-
-    [PreserveSig]
-    int Advise(
-        [MarshalAs(UnmanagedType.IUnknown)] object pUnkSink,
-        out int pdwCookie);
-
-    [PreserveSig]
-    int Unadvise(int dwCookie);
-    void EnumConnections(out System.Runtime.InteropServices.ComTypes.IEnumConnections ppEnum);
-}
-
-/// <summary>
-/// Callback interface for receiving desktop wallpaper change notifications.
-/// IID: {BB21B7CD-86F8-4384-B88A-4FE7BF1D4C87}
-/// </summary>
-[ComVisible(true)]
-[Guid("BB21B7CD-86F8-4384-B88A-4FE7BF1D4C87")]
-[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-public interface IDesktopWallpaperAdviseCallback
-{
-    [PreserveSig]
-    int OnWallpaperChanged(
-        [MarshalAs(UnmanagedType.LPWStr)] string? monitorID,
-        [MarshalAs(UnmanagedType.LPWStr)] string? wallpaper);
-}
-
-/// <summary>
 /// COM class for creating IDesktopWallpaper instances.
 /// </summary>
 [ComImport]
 [Guid("C2CF3110-460E-4fc1-B9D0-8A1C0C9CC4BD")]
 public class DesktopWallpaperClass { }
-
-/// <summary>
-/// Win32 event hooks for detecting wallpaper changes.
-/// Uses SetWinEventHook to receive system events when the desktop changes.
-/// </summary>
-public static class WallpaperChangeEvent
-{
-    public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
-    public const uint EVENT_OBJECT_CREATE = 0x8000;
-    public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
-    
-    /// <summary>
-    /// Delegate for WinEventProc callback.
-    /// </summary>
-    public delegate void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
-
-    /// <summary>
-    /// Sets a hook to detect wallpaper changes via system events.
-    /// </summary>
-    [DllImport("user32.dll")]
-    public static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventProc lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);
-
-    /// <summary>
-    /// Removes a previously installed event hook.
-    /// </summary>
-    [DllImport("user32.dll")]
-    public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
-}
 
 /// <summary>
 /// Wallpaper position enum.

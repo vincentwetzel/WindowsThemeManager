@@ -18,7 +18,7 @@ The **Themes & Monitors** tab contains the available Windows themes on the left 
 
 1. Select a theme in the list.
 2. Click the theme item to apply it.
-3. Use **Refresh** if a newly installed theme is not listed.
+3. Use **Refresh** if a newly installed theme is not listed. Refresh clears the discovery cache and reloads themes and monitor state.
 
 Themes are discovered from these Windows locations and their immediate subdirectories:
 
@@ -26,6 +26,8 @@ Themes are discovered from these Windows locations and their immediate subdirect
 - `%AppData%\Microsoft\Windows\Themes`
 - `%WINDIR%\Resources\Themes`
 - `%ProgramData%\Microsoft\Windows\Themes`
+
+Only `.theme` files are scanned. The application reads their display name and wallpaper metadata, then asks Windows to apply the complete theme file.
 
 ### Work with monitor wallpapers
 

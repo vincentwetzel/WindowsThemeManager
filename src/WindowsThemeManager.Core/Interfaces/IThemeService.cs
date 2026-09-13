@@ -28,7 +28,7 @@ public interface IThemeService
     event EventHandler<Theme>? ThemeChanged;
 
     /// <summary>
-    /// Refreshes the theme cache and re-scans directories.
+    /// Clears the cached themes so the next discovery re-scans directories.
     /// </summary>
-    Task RefreshThemesAsync(CancellationToken cancellationToken = default);
+    void RefreshThemes();
 }

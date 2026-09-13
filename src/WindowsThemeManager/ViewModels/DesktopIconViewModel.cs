@@ -16,7 +16,6 @@ public partial class DesktopIconViewModel : ObservableObject
 {
     private readonly IDesktopIconService _desktopIconService;
     private readonly ILogger<DesktopIconViewModel> _logger;
-    private readonly string _layoutsDirectory;
 
     [ObservableProperty]
     private bool _isProcessing;
@@ -33,8 +32,7 @@ public partial class DesktopIconViewModel : ObservableObject
     [ObservableProperty]
     private string _selectedFilePath = string.Empty;
 
-    [ObservableProperty]
-    private ObservableCollection<string> _savedLayouts = new();
+    public ObservableCollection<string> SavedLayouts { get; } = new();
 
     [ObservableProperty]
     private string _selectedLayoutName = string.Empty;
@@ -45,7 +43,6 @@ public partial class DesktopIconViewModel : ObservableObject
     {
         _desktopIconService = desktopIconService;
         _logger = logger;
-        _layoutsDirectory = desktopIconService.LayoutsDirectory;
 
         LoadSavedLayoutsList();
     }
@@ -126,7 +123,7 @@ public partial class DesktopIconViewModel : ObservableObject
                 _logger.LogInformation("Backup saved to {Path}", filePath);
                 
                 // Also save a copy to the internal layouts directory for the list
-                var internalPath = Path.Combine(_layoutsDirectory, $"{CurrentLayout.LayoutName}.json");
+                var internalPath = Path.Combine(_desktopIconService.LayoutsDirectory, $"{CurrentLayout.LayoutName}.json");
                 if (!File.Exists(internalPath))
                 {
                     await _desktopIconService.SaveLayoutToFileAsync(CurrentLayout, internalPath);

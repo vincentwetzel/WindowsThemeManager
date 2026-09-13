@@ -15,7 +15,7 @@ public class ThemeFileParserTests
     }
 
     [Fact]
-    public void ParseContent_ValidTheme_ReturnsThemeWithCorrectName()
+    public void ParseContent_ValidTheme_ReturnsThemeWithDisplayName()
     {
         // Arrange
         const string content = """
@@ -31,7 +31,6 @@ public class ThemeFileParserTests
 
         // Assert
         Assert.Equal("My Custom Theme", theme.DisplayName);
-        Assert.Equal("test", theme.Name);
     }
 
     [Fact]
@@ -54,44 +53,6 @@ public class ThemeFileParserTests
     }
 
     [Fact]
-    public void ParseContent_WithVisualStyles_SetsVisualStylePath()
-    {
-        // Arrange
-        const string content = """
-            [Theme]
-            DisplayName=Styled Theme
-
-            [VisualStyles]
-            Path=C:\Windows\resources\Themes\aero.msstyles
-            """;
-
-        // Act
-        var theme = _parser.ParseContent("C:\\test.theme", content);
-
-        // Assert
-        Assert.NotNull(theme.VisualStylePath);
-    }
-
-    [Fact]
-    public void ParseContent_WithSounds_SetsSoundScheme()
-    {
-        // Arrange
-        const string content = """
-            [Theme]
-            DisplayName=Complete Theme
-
-            [Sounds]
-            SchemeName=Windows Default
-            """;
-
-        // Act
-        var theme = _parser.ParseContent("C:\\test.theme", content);
-
-        // Assert
-        Assert.Equal("Windows Default", theme.SoundScheme);
-    }
-
-    [Fact]
     public void ParseContent_EmptyTheme_ReturnsThemeWithDefaults()
     {
         // Arrange
@@ -103,7 +64,6 @@ public class ThemeFileParserTests
         // Assert
         Assert.Equal("minimal", theme.DisplayName);
         Assert.Null(theme.WallpaperPath);
-        Assert.Null(theme.VisualStylePath);
     }
 
     [Fact]
@@ -143,7 +103,7 @@ public class ThemeFileParserTests
     }
 
     [Fact]
-    public void ParseContent_FullTheme_AllPropertiesSet()
+    public void ParseContent_WithWallpaperAndDisplayName_SetsBoth()
     {
         // Arrange
         const string content = """
@@ -152,15 +112,6 @@ public class ThemeFileParserTests
 
             [Control Panel\Desktop]
             Wallpaper=C:\Images\wallpaper.jpg
-
-            [VisualStyles]
-            Path=C:\Windows\resources\Themes\custom.msstyles
-
-            [Cursors]
-            Arrow=arrow.cur
-
-            [Sounds]
-            SchemeName=No Sounds
             """;
 
         // Act
@@ -169,9 +120,6 @@ public class ThemeFileParserTests
         // Assert
         Assert.Equal("Full Featured Theme", theme.DisplayName);
         Assert.NotNull(theme.WallpaperPath);
-        Assert.NotNull(theme.VisualStylePath);
-        Assert.NotNull(theme.CursorScheme);
-        Assert.Equal("No Sounds", theme.SoundScheme);
     }
 
     [Fact]

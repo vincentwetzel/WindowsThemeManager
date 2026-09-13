@@ -1,8 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Diagnostics;
 using WindowsThemeManager.Core.Models;
 using WindowsThemeManager.Services;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
 
@@ -80,19 +80,14 @@ public partial class MonitorItemViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteWallpaperAsync()
     {
-        System.Diagnostics.Debug.WriteLine($"[DEBUG-3] DeleteWallpaper command executed");
-        System.Diagnostics.Debug.WriteLine($"[DEBUG-3] WallpaperPath: {WallpaperPath ?? "null"}");
-
         if (string.IsNullOrEmpty(WallpaperPath))
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-3] ABORT: wallpaper path is null or empty");
             _dialogService.ShowWarning($"No wallpaper file is associated with monitor {MonitorNumber}.", "Open Wallpaper");
             return;
         }
 
         if (!File.Exists(WallpaperPath))
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-3] ABORT: file does not exist: {WallpaperPath}");
             _dialogService.ShowError($"The wallpaper file no longer exists:\n{WallpaperPath}", "Delete Error");
             return;
         }
@@ -108,20 +103,16 @@ public partial class MonitorItemViewModel : ObservableObject
 
         if (!confirmed)
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-3] User canceled delete operation");
             return;
         }
 
         try
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-3] Attempting to delete wallpaper to recycle bin: {WallpaperPath}");
-            
             // Move file to recycle bin using SHFileOperation
             bool success = MoveToRecycleBin(WallpaperPath);
             
             if (success)
             {
-                System.Diagnostics.Debug.WriteLine($"[DEBUG-3] Successfully moved wallpaper to recycle bin");
                 WallpaperPath = null;
                 WallpaperPreview = null;
                 _dialogService.ShowInfo(
@@ -130,7 +121,6 @@ public partial class MonitorItemViewModel : ObservableObject
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"[DEBUG-3] Failed to move wallpaper to recycle bin");
                 _dialogService.ShowError(
                     $"Failed to move the wallpaper to the Recycle Bin.\n\nFile: {fileName}",
                     "Delete Error");
@@ -138,7 +128,6 @@ public partial class MonitorItemViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-3] EXCEPTION: {ex.GetType().Name}: {ex.Message}");
             _dialogService.ShowError(
                 $"An error occurred while deleting the wallpaper:\n\n{ex.Message}",
                 "Delete Error");
@@ -167,9 +156,8 @@ public partial class MonitorItemViewModel : ObservableObject
             int result = SHFileOperation(ref fileop);
             return result == 0;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            System.Diagnostics.Debug.WriteLine($"[MoveToRecycleBin] Exception: {ex.Message}");
             return false;
         }
     }
@@ -205,38 +193,29 @@ public partial class MonitorItemViewModel : ObservableObject
     [RelayCommand]
     private void OpenWallpaper()
     {
-        System.Diagnostics.Debug.WriteLine($"[DEBUG-3] OpenWallpaper command executed");
-        System.Diagnostics.Debug.WriteLine($"[DEBUG-3] WallpaperPath: {WallpaperPath ?? "null"}");
-        System.Diagnostics.Debug.WriteLine($"[DEBUG-3] IsNullOrWhiteSpace: {string.IsNullOrWhiteSpace(WallpaperPath)}");
-
         if (string.IsNullOrEmpty(WallpaperPath))
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-3] ABORT: wallpaper path is null or empty");
             _dialogService.ShowWarning($"No wallpaper file is associated with monitor {MonitorNumber}.", "Open Wallpaper");
             return;
         }
 
         if (!File.Exists(WallpaperPath))
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-3] ABORT: file does not exist: {WallpaperPath}");
             _dialogService.ShowError($"The wallpaper file could not be found:\n{WallpaperPath}", "Open Wallpaper");
             return;
         }
 
         try
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-3] Attempting Process.Start: {WallpaperPath}");
             var psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = WallpaperPath,
                 UseShellExecute = true
             };
-            var proc = System.Diagnostics.Process.Start(psi);
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-3] Process.Start returned: Id={proc?.Id ?? 0}");
+            System.Diagnostics.Process.Start(psi);
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-3] EXCEPTION: {ex.GetType().Name}: {ex.Message}");
             _dialogService.ShowError($"Failed to open the wallpaper in the default viewer.\n\n{ex.Message}", "Open Wallpaper");
         }
     }
@@ -244,36 +223,31 @@ public partial class MonitorItemViewModel : ObservableObject
     /// <summary>
     /// Loads the wallpaper thumbnail for display.
     /// </summary>
-    public async Task LoadWallpaperPreviewAsync(int maxWidth = 400, int maxHeight = 300)
+    public async Task LoadWallpaperPreviewAsync()
     {
         if (string.IsNullOrEmpty(WallpaperPath))
         {
-            System.Diagnostics.Debug.WriteLine($"[Monitor {MonitorNumber}] No wallpaper path set");
             Trace.WriteLine($"[{DateTime.Now:O}] [MonitorItemViewModel] Monitor {MonitorNumber} has no wallpaper path");
             return;
         }
 
         if (!File.Exists(WallpaperPath))
         {
-            System.Diagnostics.Debug.WriteLine($"[Monitor {MonitorNumber}] Wallpaper file not found: {WallpaperPath}");
             Trace.WriteLine($"[{DateTime.Now:O}] [MonitorItemViewModel] Monitor {MonitorNumber} wallpaper file missing path={WallpaperPath}");
             return;
         }
 
-        System.Diagnostics.Debug.WriteLine($"[Monitor {MonitorNumber}] Loading wallpaper: {WallpaperPath}");
         Trace.WriteLine($"[{DateTime.Now:O}] [MonitorItemViewModel] Loading monitor {MonitorNumber} wallpaper path={WallpaperPath}");
         // Clear the previous image first so the UI always sees a concrete transition.
         WallpaperPreview = null;
-        WallpaperPreview = await _imageService.LoadThumbnailAsync(WallpaperPath, maxWidth, maxHeight);
+        WallpaperPreview = await _imageService.LoadThumbnailAsync(WallpaperPath);
         
         if (WallpaperPreview == null)
         {
-            System.Diagnostics.Debug.WriteLine($"[Monitor {MonitorNumber}] Failed to load wallpaper preview");
             Trace.WriteLine($"[{DateTime.Now:O}] [MonitorItemViewModel] Monitor {MonitorNumber} thumbnail load returned null");
         }
         else
         {
-            System.Diagnostics.Debug.WriteLine($"[Monitor {MonitorNumber}] Successfully loaded wallpaper preview");
             Trace.WriteLine($"[{DateTime.Now:O}] [MonitorItemViewModel] Monitor {MonitorNumber} thumbnail load succeeded");
         }
     }

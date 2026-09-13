@@ -1,15 +1,10 @@
 namespace WindowsThemeManager.Core.Models;
 
 /// <summary>
-/// Represents a Windows theme with all its associated components.
+/// Represents a discovered Windows theme.
 /// </summary>
 public class Theme
 {
-    /// <summary>
-    /// The internal name of the theme.
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
     /// <summary>
     /// The display name shown to users.
     /// </summary>
@@ -24,26 +19,6 @@ public class Theme
     /// Path to the wallpaper image file.
     /// </summary>
     public string? WallpaperPath { get; set; }
-
-    /// <summary>
-    /// Path to the visual style (.msstyles) file.
-    /// </summary>
-    public string? VisualStylePath { get; set; }
-
-    /// <summary>
-    /// The cursor scheme name or path.
-    /// </summary>
-    public string? CursorScheme { get; set; }
-
-    /// <summary>
-    /// The sound scheme name.
-    /// </summary>
-    public string? SoundScheme { get; set; }
-
-    /// <summary>
-    /// Path to the theme preview image.
-    /// </summary>
-    public string? PreviewImage { get; set; }
 
     /// <summary>
     /// Indicates whether this is a system-provided theme.

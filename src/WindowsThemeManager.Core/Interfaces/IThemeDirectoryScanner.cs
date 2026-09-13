@@ -10,10 +10,6 @@ public interface IThemeDirectoryScanner
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Collection of theme file paths found on the system.</returns>
-    Task<IEnumerable<string>> ScanThemeDirectoriesAsync(CancellationToken cancellationToken = default);
+    IEnumerable<string> ScanThemeDirectories(CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Gets the list of directories that will be scanned for themes.
-    /// </summary>
-    IEnumerable<string> GetThemeDirectories();
 }

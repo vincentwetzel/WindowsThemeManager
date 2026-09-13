@@ -36,19 +36,4 @@ public class MonitorServiceTests
         Assert.Contains(layout.Monitors, m => m.IsPrimary);
     }
 
-    [Fact]
-    public async Task GetMonitorWallpaperAsync_ReturnsValidPathOrNull()
-    {
-        // Arrange
-        var layout = await _monitorService.GetMonitorLayoutAsync();
-
-        // Act - try to get wallpaper for first monitor
-        var wallpaper = await _monitorService.GetMonitorWallpaperAsync(0);
-
-        // Assert - may be null or a valid path
-        if (!string.IsNullOrEmpty(wallpaper))
-        {
-            Assert.True(Path.IsPathRooted(wallpaper), "Wallpaper path should be absolute");
-        }
-    }
 }

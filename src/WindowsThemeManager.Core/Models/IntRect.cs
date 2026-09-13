@@ -49,9 +49,6 @@ public readonly struct IntRect : IEquatable<IntRect>
     public bool Contains(int x, int y) =>
         x >= Left && x < Right && y >= Top && y < Bottom;
 
-    public bool Contains(IntRect other) =>
-        Left <= other.Left && Top <= other.Top && Right >= other.Right && Bottom >= other.Bottom;
-
     /// <summary>
     /// Intersects this rectangle with another.
     /// </summary>

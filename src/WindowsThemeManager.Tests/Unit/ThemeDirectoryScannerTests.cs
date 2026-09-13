@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using WindowsThemeManager.Core.Models;
 using WindowsThemeManager.Core.Services;
 
 namespace WindowsThemeManager.Tests.Unit;
@@ -15,21 +14,10 @@ public class ThemeDirectoryScannerTests
     }
 
     [Fact]
-    public void GetThemeDirectories_ReturnsNonEmptyList()
+    public void ScanThemeDirectories_ReturnsExistingPaths()
     {
         // Act
-        var directories = _scanner.GetThemeDirectories();
-
-        // Assert - should include standard Windows theme directories
-        Assert.NotEmpty(directories);
-        Assert.Contains(directories, d => d.Contains("Microsoft", StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
-    public async Task ScanThemeDirectoriesAsync_ReturnsExistingPaths()
-    {
-        // Act
-        var themePaths = await _scanner.ScanThemeDirectoriesAsync();
+        var themePaths = _scanner.ScanThemeDirectories();
 
         // Assert - may be empty if no themes installed, but should not throw
         Assert.NotNull(themePaths);

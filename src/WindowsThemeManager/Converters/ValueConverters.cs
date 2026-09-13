@@ -1,7 +1,5 @@
 using System.Globalization;
 using System.Windows.Data;
-using System.Windows.Media;
-using WindowsThemeManager.Themes;
 
 namespace WindowsThemeManager.Converters;
 
@@ -26,48 +24,6 @@ public class BoolToVisibilityConverter : IValueConverter
 }
 
 /// <summary>
-/// Returns a highlight brush for active theme items.
-/// Uses the centralized accent color from AppThemeColors.
-/// </summary>
-public class ActiveThemeBackgroundConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        if (value is bool b && b)
-        {
-            var brush = new SolidColorBrush(AppThemeColors.AccentBackground);
-            brush.Freeze();
-            return brush;
-        }
-        return new SolidColorBrush(Colors.Transparent);
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        => throw new NotImplementedException();
-}
-
-/// <summary>
-/// Returns a border brush for active theme items.
-/// Uses the centralized accent color from AppThemeColors.
-/// </summary>
-public class ActiveThemeBorderConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        if (value is bool b && b)
-        {
-            var brush = new SolidColorBrush(AppThemeColors.AccentBorder);
-            brush.Freeze();
-            return brush;
-        }
-        return new SolidColorBrush(Colors.Transparent);
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        => throw new NotImplementedException();
-}
-
-/// <summary>
 /// Converts boolean to an icon character.
 /// </summary>
 public class BoolToIconConverter : IValueConverter
@@ -84,22 +40,16 @@ public class BoolToIconConverter : IValueConverter
 }
 
 /// <summary>
-/// Converts object to visibility (null/empty = Visible, has value = Collapsed).
+/// Converts null to visible and non-null to collapsed.
 /// Used for showing placeholders when values are missing.
 /// </summary>
 public class NullToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        bool isNull = value == null;
-
-        // Check for inverse parameter
-        bool inverse = parameter is string s && s.Equals("Inverse", StringComparison.OrdinalIgnoreCase);
-
-        if (inverse)
-            isNull = !isNull;
-
-        return isNull ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+        return value == null
+            ? System.Windows.Visibility.Visible
+            : System.Windows.Visibility.Collapsed;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -134,14 +84,7 @@ public class NullToBoolConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        bool isNull = value == null;
-        
-        bool inverse = parameter is string s && s.Equals("Inverse", StringComparison.OrdinalIgnoreCase);
-        
-        if (inverse)
-            isNull = !isNull;
-        
-        return !isNull;
+        return value != null;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

@@ -34,7 +34,6 @@ public partial class ThemeFileParser : Interfaces.IThemeFileParser
         var theme = new Theme
         {
             ThemePath = themeFilePath,
-            Name = Path.GetFileNameWithoutExtension(themeFilePath),
             DisplayName = Path.GetFileNameWithoutExtension(themeFilePath), // Default to file name
         };
 
@@ -55,35 +54,12 @@ public partial class ThemeFileParser : Interfaces.IThemeFileParser
             theme.WallpaperPath = ResolvePath(wallpaper, themeFilePath);
         }
 
-        // Parse [VisualStyles] section
-        if (sections.TryGetValue("VisualStyles", out var visualStylesSection))
-        {
-            var stylePath = GetValue(visualStylesSection, "Path");
-            theme.VisualStylePath = ResolvePath(stylePath, themeFilePath);
-        }
-
-        // Parse [Cursors] section
-        if (sections.TryGetValue("Cursors", out var cursorsSection))
-        {
-            // The cursors section doesn't have a simple scheme name, but we note its presence
-            theme.CursorScheme = cursorsSection.Count > 0 ? "Custom" : null;
-        }
-
-        // Parse [Sounds] section
-        if (sections.TryGetValue("Sounds", out var soundsSection))
-        {
-            var schemeName = GetValue(soundsSection, "SchemeName");
-            theme.SoundScheme = string.IsNullOrEmpty(schemeName) ? null : schemeName;
-        }
-
         // Determine if it's a system theme based on path
         var windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
         theme.IsSystemTheme = themeFilePath.StartsWith(windowsDir, StringComparison.OrdinalIgnoreCase);
 
         _logger.LogDebug("Parsed theme file: {ThemeFile} -> {DisplayName}",
             themeFilePath, theme.DisplayName);
-        Console.WriteLine($"[ThemeFileParser] Parsed theme file: {themeFilePath} -> {theme.DisplayName}");
-        System.Diagnostics.Debug.WriteLine($"[ThemeFileParser] Parsed theme file: {themeFilePath} -> {theme.DisplayName}");
 
         return theme;
     }

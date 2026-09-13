@@ -49,8 +49,4 @@ public partial class ThemeItemViewModel : ObservableObject
         }
     }
 
-    public void UpdateFromTheme(Theme theme)
-    {
-        Theme = theme;
-    }
 }

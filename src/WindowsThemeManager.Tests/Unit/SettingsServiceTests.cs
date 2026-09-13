@@ -22,9 +22,6 @@ public class SettingsServiceTests
         Assert.Equal(1200, _settingsService.Settings.WindowWidth);
         Assert.Equal(700, _settingsService.Settings.WindowHeight);
         Assert.False(_settingsService.Settings.WindowMaximized);
-        Assert.Empty(_settingsService.Settings.CustomThemeDirectories);
-        Assert.Equal(100, _settingsService.Settings.MaxCacheSize);
-        Assert.True(_settingsService.Settings.RefreshOnStartup);
     }
 
     [Fact]
@@ -39,7 +36,6 @@ public class SettingsServiceTests
         service.Settings.WindowWidth = 1400;
         service.Settings.WindowHeight = 900;
         service.Settings.WindowMaximized = true;
-        service.Settings.RefreshOnStartup = false;
 
         // Act
         await service.SaveAsync();
@@ -53,7 +49,6 @@ public class SettingsServiceTests
         Assert.Equal(1400, newService.Settings.WindowWidth);
         Assert.Equal(900, newService.Settings.WindowHeight);
         Assert.True(newService.Settings.WindowMaximized);
-        Assert.False(newService.Settings.RefreshOnStartup);
 
         // Cleanup
         if (File.Exists(tempPath))

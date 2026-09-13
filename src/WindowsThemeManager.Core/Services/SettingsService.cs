@@ -9,27 +9,29 @@ namespace WindowsThemeManager.Core.Services;
 /// </summary>
 public class SettingsService
 {
+    private static readonly JsonSerializerOptions LoadOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        ReadCommentHandling = JsonCommentHandling.Skip
+    };
+
+    private static readonly JsonSerializerOptions SaveOptions = new()
+    {
+        WriteIndented = true
+    };
+
     private readonly ILogger<SettingsService> _logger;
     private readonly string _settingsFilePath;
 
     public AppSettings Settings { get; private set; } = AppSettings.Default;
 
-    public SettingsService(ILogger<SettingsService> logger)
+    public SettingsService(ILogger<SettingsService> logger, string? customFilePath = null)
     {
         _logger = logger;
-        _settingsFilePath = Path.Combine(
+        _settingsFilePath = customFilePath ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "WindowsThemeManager",
             "settings.json");
-    }
-
-    /// <summary>
-    /// Creates a SettingsService with a custom file path (for testing).
-    /// </summary>
-    public SettingsService(ILogger<SettingsService> logger, string customFilePath)
-    {
-        _logger = logger;
-        _settingsFilePath = customFilePath;
     }
 
     /// <summary>
@@ -42,29 +44,17 @@ public class SettingsService
             if (!File.Exists(_settingsFilePath))
             {
                 _logger.LogDebug("Settings file not found, using defaults: {Path}", _settingsFilePath);
-                Console.WriteLine($"[SettingsService] Settings file not found, using defaults: {_settingsFilePath}");
-                System.Diagnostics.Debug.WriteLine($"[SettingsService] Settings file not found, using defaults: {_settingsFilePath}");
                 Settings = AppSettings.Default;
                 return;
             }
 
             var json = await File.ReadAllTextAsync(_settingsFilePath);
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                ReadCommentHandling = JsonCommentHandling.Skip
-            };
-
-            Settings = JsonSerializer.Deserialize<AppSettings>(json, options) ?? AppSettings.Default;
+            Settings = JsonSerializer.Deserialize<AppSettings>(json, LoadOptions) ?? AppSettings.Default;
             _logger.LogInformation("Settings loaded from {Path}", _settingsFilePath);
-            Console.WriteLine($"[SettingsService] Settings loaded from {_settingsFilePath}");
-            System.Diagnostics.Debug.WriteLine($"[SettingsService] Settings loaded from {_settingsFilePath}");
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to load settings, using defaults");
-            Console.WriteLine($"[SettingsService] Failed to load settings, using defaults: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"[SettingsService] Failed to load settings, using defaults: {ex.Message}");
             Settings = AppSettings.Default;
         }
     }
@@ -82,23 +72,14 @@ public class SettingsService
                 Directory.CreateDirectory(directory);
             }
 
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true
-            };
-
-            var json = JsonSerializer.Serialize(Settings, options);
+            var json = JsonSerializer.Serialize(Settings, SaveOptions);
             await File.WriteAllTextAsync(_settingsFilePath, json);
 
             _logger.LogInformation("Settings saved to {Path}", _settingsFilePath);
-            Console.WriteLine($"[SettingsService] Settings saved to {_settingsFilePath}");
-            System.Diagnostics.Debug.WriteLine($"[SettingsService] Settings saved to {_settingsFilePath}");
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to save settings");
-            Console.WriteLine($"[SettingsService] Failed to save settings: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"[SettingsService] Failed to save settings: {ex.Message}");
         }
     }
 }

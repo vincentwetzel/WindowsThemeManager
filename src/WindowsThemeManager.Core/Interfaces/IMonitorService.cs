@@ -13,11 +13,6 @@ public interface IMonitorService
     Task<MonitorLayout> GetMonitorLayoutAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets the wallpaper path for a specific monitor.
-    /// </summary>
-    Task<string?> GetMonitorWallpaperAsync(int monitorIndex, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Starts listening for wallpaper change events.
     /// </summary>
     void StartListeningForWallpaperChanges();
@@ -33,8 +28,4 @@ public interface IMonitorService
     /// </summary>
     event EventHandler<(string DevicePath, string? WallpaperPath)>? WallpaperChanged;
 
-    /// <summary>
-    /// Event raised when monitor configuration changes.
-    /// </summary>
-    event EventHandler? MonitorConfigurationChanged;
 }

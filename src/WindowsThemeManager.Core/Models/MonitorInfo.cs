@@ -35,10 +35,5 @@ public class MonitorInfo
     /// </summary>
     public string? CurrentWallpaperPath { get; set; }
 
-    /// <summary>
-    /// Thumbnail preview of the current wallpaper.
-    /// </summary>
-    public object? WallpaperPreview { get; set; }
-
     public override string ToString() => $"{DeviceName} ({Bounds.Width}x{Bounds.Height}){(IsPrimary ? " - Primary" : "")}";
 }

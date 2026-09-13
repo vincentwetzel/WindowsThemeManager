@@ -43,17 +43,13 @@ public class ThemeService : IThemeService
             if (_cachedThemes != null && DateTime.UtcNow - _cacheTimestamp < CacheDuration)
             {
                 _logger.LogDebug("Returning cached themes ({Count})", _cachedThemes.Count);
-                Console.WriteLine($"[ThemeService] Returning cached themes ({_cachedThemes.Count})");
-                System.Diagnostics.Debug.WriteLine($"[ThemeService] Returning cached themes ({_cachedThemes.Count})");
                 return _cachedThemes;
             }
         }
 
         _logger.LogInformation("Discovering themes...");
-        Console.WriteLine("[ThemeService] Discovering themes...");
-        System.Diagnostics.Debug.WriteLine("[ThemeService] Discovering themes...");
 
-        var themePaths = await _scanner.ScanThemeDirectoriesAsync(cancellationToken);
+        var themePaths = _scanner.ScanThemeDirectories(cancellationToken);
         var themes = new List<Theme>();
 
         foreach (var path in themePaths)
@@ -68,8 +64,6 @@ public class ThemeService : IThemeService
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogWarning(ex, "Failed to parse theme file: {ThemeFile}", path);
-                Console.WriteLine($"[ThemeService] Failed to parse theme file: {path} - {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[ThemeService] Failed to parse theme file: {path} - {ex.Message}");
             }
         }
 
@@ -84,8 +78,6 @@ public class ThemeService : IThemeService
         }
 
         _logger.LogInformation("Discovered {Count} themes", themes.Count);
-        Console.WriteLine($"[ThemeService] Discovered {themes.Count} themes");
-        System.Diagnostics.Debug.WriteLine($"[ThemeService] Discovered {themes.Count} themes");
         return themes;
     }
 
@@ -106,15 +98,11 @@ public class ThemeService : IThemeService
             if (matchingTheme != null)
             {
                 _logger.LogDebug("Found matching theme: {DisplayName}", matchingTheme.DisplayName);
-                Console.WriteLine($"[ThemeService] Found matching theme: {matchingTheme.DisplayName}");
-                System.Diagnostics.Debug.WriteLine($"[ThemeService] Found matching theme: {matchingTheme.DisplayName}");
                 return matchingTheme;
             }
         }
 
         _logger.LogDebug("Could not determine current theme");
-        Console.WriteLine("[ThemeService] Could not determine current theme");
-        System.Diagnostics.Debug.WriteLine("[ThemeService] Could not determine current theme");
         return null;
     }
 
@@ -127,42 +115,37 @@ public class ThemeService : IThemeService
             throw new InvalidOperationException($"Cannot apply invalid theme: {theme.DisplayName}");
 
         _logger.LogInformation("Applying theme: {DisplayName}", theme.DisplayName);
-        Console.WriteLine($"[ThemeService] Applying theme: {theme.DisplayName}");
-        System.Diagnostics.Debug.WriteLine($"[ThemeService] Applying theme: {theme.DisplayName}");
 
         var success = await _applier.ApplyThemeAsync(theme, cancellationToken);
 
         if (success)
         {
-            lock (_cacheLock)
-            {
-                _cacheTimestamp = DateTime.MinValue; // Invalidate cache
-            }
+            InvalidateCache();
 
             ThemeChanged?.Invoke(this, theme);
         }
         else
         {
             _logger.LogWarning("Theme application failed: {DisplayName}", theme.DisplayName);
-            Console.WriteLine($"[ThemeService] Theme application failed: {theme.DisplayName}");
-            System.Diagnostics.Debug.WriteLine($"[ThemeService] Theme application failed: {theme.DisplayName}");
             throw new InvalidOperationException($"Failed to apply theme: {theme.DisplayName}");
         }
     }
 
     /// <inheritdoc />
-    public Task RefreshThemesAsync(CancellationToken cancellationToken = default)
+    public void RefreshThemes()
+    {
+        InvalidateCache();
+
+        _logger.LogInformation("Theme cache cleared");
+    }
+
+    private void InvalidateCache()
     {
         lock (_cacheLock)
         {
             _cachedThemes = null;
             _cacheTimestamp = DateTime.MinValue;
         }
-
-        _logger.LogInformation("Theme cache cleared");
-        Console.WriteLine("[ThemeService] Theme cache cleared");
-        System.Diagnostics.Debug.WriteLine("[ThemeService] Theme cache cleared");
-        return Task.CompletedTask;
     }
 
     /// <summary>

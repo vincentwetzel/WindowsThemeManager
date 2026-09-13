@@ -6,7 +6,6 @@ using WindowsThemeManager.Core.Interfaces;
 using WindowsThemeManager.Core.Services;
 using WindowsThemeManager.Services;
 using WindowsThemeManager.ViewModels;
-using WindowsThemeManager.Core.Models;
 
 namespace WindowsThemeManager;
 

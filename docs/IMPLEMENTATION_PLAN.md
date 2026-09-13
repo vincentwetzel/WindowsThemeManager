@@ -16,7 +16,7 @@ This document is retained as an implementation record and completed roadmap for 
 
 - Theme directory scanning and `.theme` parsing implemented.
 - Theme discovery and caching implemented.
-- Wallpaper, visual style, refresh, and rollback behavior implemented.
+- Complete `.theme` application delegated to Windows, with cache invalidation after successful application.
 
 ### Monitor detection
 
@@ -37,12 +37,13 @@ This document is retained as an implementation record and completed roadmap for 
 - Application lifecycle wiring completed.
 - Settings persistence completed for supported settings.
 - Refresh and update flows completed.
-- Unit and integration coverage completed where applicable.
+- Unit coverage added for core parsers, scanners, settings, layout models, and service coordination where platform seams permit.
 
 ## Current notes
 
 - `IDesktopWallpaper` is the source of truth for per-monitor wallpaper state.
 - The active change-detection implementation polls that API every two seconds.
+- Theme application uses the Windows shell's complete `.theme` workflow; individual visual-style, cursor, sound, and wallpaper application paths are intentionally not maintained.
 - When debugging, add stage-specific diagnostics for platform queries, refresh execution, image loading, and file actions.
 
 ## Success criteria

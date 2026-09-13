@@ -4,10 +4,14 @@
 
 1. Confirm that Windows theme files exist in one of the locations listed in the [User Guide](USER_GUIDE.md).
 2. Click **Refresh** in the Themes & Monitors tab.
-3. Confirm the files have a `.theme` extension and are readable by the current Windows user.
+3. Confirm the files have a `.theme` extension and are readable by the current Windows user. Packaged theme files such as `.deskthemepack` are not scanned.
 4. Check the latest log under `%LocalAppData%\WindowsThemeManager\Logs` for scan or parse warnings.
 
 The scanner checks each standard directory and its immediate child directories. It does not recursively scan every nested folder.
+
+## A theme cannot be applied
+
+The selected file must still exist and be a valid `.theme` file. The application delegates complete-theme application to Windows; it does not apply visual styles, cursor schemes, sounds, or wallpapers as separate operations. If Windows rejects the file, try opening it from File Explorer or select another theme.
 
 ## A monitor shows “No Wallpaper”
 

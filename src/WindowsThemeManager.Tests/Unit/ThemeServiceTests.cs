@@ -56,11 +56,11 @@ public class ThemeServiceTests
     }
 
     [Fact]
-    public async Task RefreshThemesAsync_ClearsCache()
+    public async Task RefreshThemes_ClearsCache()
     {
         // Act
         await _themeService.DiscoverThemesAsync(); // populate cache
-        await _themeService.RefreshThemesAsync();
+        _themeService.RefreshThemes();
         var themes = await _themeService.DiscoverThemesAsync(); // should re-scan
 
         // Assert - should not throw

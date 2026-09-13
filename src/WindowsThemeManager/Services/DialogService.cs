@@ -7,16 +7,6 @@ namespace WindowsThemeManager.Services;
 /// </summary>
 public class DialogService : IDialogService
 {
-    private Window? _owner;
-
-    /// <summary>
-    /// Sets the owner window for dialogs.
-    /// </summary>
-    public void SetOwner(Window? owner)
-    {
-        _owner = owner;
-    }
-
     public void ShowInfo(string message, string title = "Information")
     {
         ShowMessage(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
@@ -44,9 +34,7 @@ public class DialogService : IDialogService
         MessageBoxButton button,
         MessageBoxImage icon)
     {
-        return _owner is null
-            ? MessageBox.Show(message, title, button, icon)
-            : MessageBox.Show(_owner, message, title, button, icon);
+        return MessageBox.Show(message, title, button, icon);
     }
 }
 
